@@ -17,10 +17,12 @@ RicksMLC_TreasureHunt.Treasures = {
     "Spiffo"
 }
 
+RicksMLC_TreasureHunt.MapIDLookup = { }
+
 -- Log the map that is read with the "Read Map" menu.
-RicksMLC_TreasureHunt.readingMapItem = nil
-function RicksMLC_TreasureHunt.GetReadingMap() return RicksMLC_TreasureHunt.readingMapItem end
-function RicksMLC_TreasureHunt.SetReadingMap(item) RicksMLC_TreasureHunt.readingMapItem = item end
+RicksMLC_TreasureHunt.readingMapID = nil
+function RicksMLC_TreasureHunt.GetReadingMap() return RicksMLC_TreasureHunt.readingMapID end
+function RicksMLC_TreasureHunt.SetReadingMap(item) RicksMLC_TreasureHunt.readingMapID = item end
 
 function RicksMLC_TreasureHunt.setBoundsInSquares(mapAPI)
     --mapAPI:setBoundsInSquares(7970, 7130, 8869, 7889) -- Get from the Debug Map Bounds?
@@ -28,14 +30,29 @@ function RicksMLC_TreasureHunt.setBoundsInSquares(mapAPI)
     if not treasureMaps then
         return
     end
-    local mapItem = RicksMLC_TreasureHunt.GetReadingMap()
     local treasureData = treasureMaps.Maps[treasureMaps.CurrentMapNum]
+    local mapID = RicksMLC_TreasureHunt.GetReadingMap()
+    if mapID then
+        treasureData = treasureMaps.Maps[RicksMLC_TreasureHunt.MapIDLookup[mapID]]
+    end
     local dx = 600
     local dy = 500
     if treasureData then
         mapAPI:setBoundsInSquares(treasureData.buildingCentreX - dx, treasureData.buildingCentreY - dy, treasureData.buildingCentreX + dx, treasureData.buildingCentreY + dy)
     end
 end
+
+RicksMLC_TreasureHunt.MapDefnFn = function(mapUI)
+	local mapAPI = mapUI.javaObject:getAPIv1()
+	MapUtils.initDirectoryMapData(mapUI, 'media/maps/Muldraugh, KY')
+	MapUtils.initDefaultStyleV1(mapUI)
+	RicksMLC_MapUtils.ReplaceWaterStyle(mapUI)
+
+	RicksMLC_TreasureHunt.setBoundsInSquares(mapAPI)
+
+	MapUtils.overlayPaper(mapUI)
+end
+
 
 -- Choose a random buiding for the treasure.
 -- Param: map: Optional.  Restrict the selection to the given map extents
@@ -96,17 +113,8 @@ function RicksMLC_TreasureHunt.AddStashMaps(treasureMaps)
                 treasureData.Treasure)
         end
         LootMaps.Init[RicksMLC_TreasureHunt.GenerateMapName(i)] = RicksMLC_TreasureHunt.MapDefnFn
+        RicksMLC_TreasureHunt.MapIDLookup[RicksMLC_TreasureHunt.GenerateMapName(i)] = i
     end
-end
-
-RicksMLC_TreasureHunt.MapDefnFn = function(mapUI)
-	local mapAPI = mapUI.javaObject:getAPIv1()
-	MapUtils.initDirectoryMapData(mapUI, 'media/maps/Muldraugh, KY')
-	MapUtils.initDefaultStyleV1(mapUI)
-	RicksMLC_MapUtils.ReplaceWaterStyle(mapUI)
-
-	RicksMLC_TreasureHunt.setBoundsInSquares(mapAPI)
-	MapUtils.overlayPaper(mapUI)
 end
 
 function RicksMLC_TreasureHunt.GenerateTreasures()

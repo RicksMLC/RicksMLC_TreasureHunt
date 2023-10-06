@@ -1,8 +1,4 @@
 # RicksMLC_TreasureHunt
-Template PZ Mod structure
-Includes the .vscode\tasks.json file with the tasks:<br>
-  RELEASE<br>
-  CLEAN<br>
-  TEST<br>
+A Treasure Hunt mod for Procect Zomboid<br>
 
-Run these tasks using the menu Terminal -> Run Task...
+

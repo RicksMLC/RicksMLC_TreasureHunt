@@ -5,7 +5,7 @@ require "RicksMLC_TreasureHunt"
 
 local overideOnCheckMap = ISInventoryPaneContextMenu.onCheckMap
 ISInventoryPaneContextMenu.onCheckMap = function(self, map, player)
-    RicksMLC_TreasureHunt.SetReadingMap(map)
+    RicksMLC_TreasureHunt.SetReadingMap(self:getMapID())
     overideOnCheckMap(self, map, player)
 end
 
