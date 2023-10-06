@@ -1,0 +1,6 @@
+Sandbox_EN = {
+    Sandbox_RicksMLC_TreasureHunt = "Rick's MLC Template",
+
+    Sandbox_RicksMLC_TreasureHunt_On = "Is this on?",
+    Sandbox_RicksMLC_TreasureHunt_On_tooltip = "Just an example template tooltip",
+}

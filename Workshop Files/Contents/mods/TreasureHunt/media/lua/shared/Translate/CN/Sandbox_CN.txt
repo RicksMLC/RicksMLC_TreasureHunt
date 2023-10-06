@@ -1,0 +1,37 @@
+-- Rick's MLC Concussion
+-- Chinese Simplified Translation - UTF-8
+
+Sandbox_CN = {
+    Sandbox_RicksMLC_Concussion = "Rick's MLC 震荡",
+
+    Sandbox_RicksMLC_Concussion_ConcussionWallEffectTime = "壁震荡效果时间（秒）",
+    Sandbox_RicksMLC_Concussion_ConcussionWallEffectTime_tooltip = "效果持续多长时间（以秒为单位）。设置为 0 可禁用墙壁震荡。",
+
+    Sandbox_RicksMLC_Concussion_ConcussionTripEffectTime = "跳闸脑震荡效果时间（秒）",
+    Sandbox_RicksMLC_Concussion_ConcussionTripEffectTime_tooltip = "效果持续多长时间（以秒为单位）。设置为 0 可禁用清醒行程脑震荡。",
+
+    Sandbox_RicksMLC_Concussion_ConcussionTripChance = "跳闸脑震荡概率 %",
+    Sandbox_RicksMLC_Concussion_ConcussionTripChance_tooltip = "跌倒后脑震荡的机会",
+
+    Sandbox_RicksMLC_Concussion_ThoughtsOn = "查看想法",
+    Sandbox_RicksMLC_Concussion_ThoughtsOn_tooltip = "脑震荡时打开/关闭想法",
+
+    Sandbox_RicksMLC_Concussion_DrunkOn = "酒精影响运动",
+    Sandbox_RicksMLC_Concussion_DrunkOn_tooltip = "打开/关闭由于醉酒情绪水平而绊倒和/或跌倒",
+
+	Sandbox_RicksMLC_Concussion_DrunkThoughts = "看到醉酒的想法",
+	Sandbox_RicksMLC_Concussion_DrunkThoughts_tooltip = "醉酒时打开/关闭想法",
+
+    Sandbox_RicksMLC_Concussion_DrunkBaseProbStagger = "错开的基本几率百分比",
+    Sandbox_RicksMLC_Concussion_DrunkBaseProbStagger_tooltip = "游戏中的每一分钟（实时约1秒）都有这个基本机会错开（n x醉酒水平）",
+	
+    Sandbox_RicksMLC_Concussion_DrunkBaseTimeStagger = "基础交错（秒）",
+    Sandbox_RicksMLC_Concussion_DrunkBaseTimeStagger_tooltip = "交错的基本持续时间（以秒为单位）（n x 醉酒级别）",
+	
+    Sandbox_RicksMLC_Concussion_DrunkStaggerCooldown = "交错之间的冷却间隔",
+    Sandbox_RicksMLC_Concussion_DrunkStaggerCooldown_tooltip = "在最后一次成功后等待检查错开的游戏内分钟数（大约 1 秒实时）。",
+
+    Sandbox_RicksMLC_Concussion_DrunkBaseProbTrip = "绊倒的基本几率百分比",
+    Sandbox_RicksMLC_Concussion_DrunkBaseProbTrip_tooltip = "游戏中的每一分钟（实时约1秒）都有这个基本机会被绊倒（n x醉酒水平）",
+
+}

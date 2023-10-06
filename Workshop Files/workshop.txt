@@ -1,0 +1,7 @@
+version=0.1
+title=Rick's MLC Treasure Hunt
+description= Template template template
+description=
+description= Languages supported:English and (possibly badly translated): Spanish, Korean, Portuguese
+tags=Build 41
+visibility=public
