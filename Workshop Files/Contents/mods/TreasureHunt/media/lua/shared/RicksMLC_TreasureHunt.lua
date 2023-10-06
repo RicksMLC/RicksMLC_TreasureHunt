@@ -125,7 +125,6 @@ function RicksMLC_TreasureHunt.GenerateTreasures()
         treasureMaps[i] = RicksMLC_TreasureHunt.CreateTreasureMap(treasure, mapBounds)
         treasureMaps[i].Town = randomTown
         local mapName = RicksMLC_TreasureHunt.GenerateMapName(i)
-        -- FIXME: move to AddStashMaps? LootMaps.Init[RicksMLC_TreasureHunt.GenerateMapName(i)] = RicksMLC_TreasureHunt.MapDefnFn
     end
 
     getPlayer():getModData()["RicksMLC_TreasureHunt"] = {CurrentMapNum = 1, Maps = treasureMaps}
@@ -154,6 +153,36 @@ function RicksMLC_TreasureHunt.InitTreasureHunt()
     RicksMLC_TreasureHunt.InitStashMaps(treasureHunt)
 end
 
+-----------------------------------------------------------------------
+-- Functions for finding treasure in the player/container inventory
+
+function RicksMLC_TreasureHunt.FindMissingTreasureItem(itemContainer)
+	-- https://projectzomboid.com/modding////zombie/inventory/ItemContainer.html
+    for i, treasureType in ipairs(RicksMLC_TreasureHunt.Treasures) do
+	    local itemList = itemContainer:getAllTypeRecurse(treasureType)
+        if itemList:isEmpty() then
+            -- not found, so return it as the next thing to find
+            return {TreasureNum = i, Treasure = treasureType}
+        end
+    end
+	return nil
+end
+
+function RicksMLC_TreasureHunt.CheckPlayerLootForTreasure(player)
+	local itemContainer = player:getInventory() -- lootInv is an ISInventoryPage or an ItemContainer
+	if itemContainer then
+		local missingTreasureItem = RicksMLC_TreasureHunt.FindMissingTreasureItem(itemContainer)
+		if missingTreasureItem then
+            local treasureHunt = player:getModData()["RicksMLC_TreasureHunt"]
+            treasureHunt.CurrentMapNum = missingTreasureItem.TreasureNum
+            return true
+        else
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckPlayerLootForTreasure All tresaure found.")
+            return false
+    	end
+	end
+end
+
 function RicksMLC_TreasureHunt.AddCurrentMapToInventory(player)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddCurrentMapToInventory()")
     RicksMLC_TreasureHunt.Dump(player)
@@ -163,19 +192,25 @@ function RicksMLC_TreasureHunt.AddCurrentMapToInventory(player)
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddCurrentMapToInventory() Error: no treasureHunt data for player")
         return
     end
-    local treasureData = treasureHunt.Maps[treasureHunt.CurrentMapNum]
-    local stash = StashSystem.getStash(RicksMLC_TreasureHunt.GenerateMapName(treasureHunt.CurrentMapNum))
-    if not stash then
-        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddCurrentMapToInventory() Error: no stash for '" .. RicksMLC_TreasureHunt.GenerateMapName(treasureHunt.CurrentMapNum) .. "'" )
-        return
+
+    -- Check which treasure is missing, and make that the current treasure map to find.
+    if RicksMLC_TreasureHunt.CheckPlayerLootForTreasure(player) then
+        local treasureData = treasureHunt.Maps[treasureHunt.CurrentMapNum]
+        local stash = StashSystem.getStash(RicksMLC_TreasureHunt.GenerateMapName(treasureHunt.CurrentMapNum))
+        if not stash then
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddCurrentMapToInventory() Error: no stash for '" .. RicksMLC_TreasureHunt.GenerateMapName(treasureHunt.CurrentMapNum) .. "'" )
+            return
+        end
+        local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
+        local treasureItem = InventoryItemFactory.CreateItem("Base." .. treasureData.Treasure)
+        mapItem:setMapID(RicksMLC_TreasureHunt.GenerateMapName(treasureHunt.CurrentMapNum))
+        StashSystem.doStashItem(stash, mapItem)
+        mapItem:setName(mapItem:getDisplayName() .. ": " .. treasureItem:getDisplayName())
+        mapItem:setCustomName(true)
+        player:getInventory():AddItem(mapItem)
+    else
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddCurrentMapToInventory() No more treasure to find.")
     end
-    local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
-    local treasureItem = InventoryItemFactory.CreateItem("Base." .. treasureData.Treasure)
-    mapItem:setMapID(RicksMLC_TreasureHunt.GenerateMapName(treasureHunt.CurrentMapNum))
-    StashSystem.doStashItem(stash, mapItem)
-    mapItem:setName(mapItem:getDisplayName() .. ": " .. treasureItem:getDisplayName())
-    mapItem:setCustomName(true)
-    player:getInventory():AddItem(mapItem)
 
     -- From AdHocCmds Vending ... not sure if it applies here.
     --self.invPage.inventoryPane.inventory:AddItem(self.prize)
