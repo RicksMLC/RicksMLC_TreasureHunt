@@ -1,7 +1,9 @@
-version=0.1
+version=0.8
 title=Rick's MLC Treasure Hunt
-description= Template template template
-description=
+description= There is a trail of treasures in Knox County.  Single Player (for now)
+description= 
+description= This mod adds a sequence of treasure maps.  The first map will be found on the first zombie you hit.
+description= Keep the treasures on you so the next map will appear.  There are eight treasures to be found.
 description= Languages supported:English and (possibly badly translated): Spanish, Korean, Portuguese
 tags=Build 41
 visibility=public

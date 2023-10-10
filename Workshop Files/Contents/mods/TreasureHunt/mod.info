@@ -1,6 +1,8 @@
 name=Rick's MLC Treasure Hunt
 poster=poster.png
 id=RicksMLC_TreasureHunt
-description= Template template template <LINE>
-description= Template
+description= There is a trail of treasures in Knox County. Single Player (for now)<LINE>
+description= <LINE>
+description= This mod adds a sequence of treasure maps.  The first map will be found on the first zombie you hit. <LINE>
+description= Keep the treasures on you so the next map will appear.  There are eight treasures to be found.
 url=
