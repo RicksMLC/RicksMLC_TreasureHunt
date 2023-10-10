@@ -11,16 +11,4 @@ module Base {
         WorldStaticModel    = Map,
     },
 
---    item RicksMLC_TreasureMap01 {
---        DisplayCategory     = Cartography,
---        Type				= Map,
---        DisplayName			= Rick's MLC Treasure Map 01,
---        Icon				= Map,
---        Weight				= 0.1,
---        Map                 = RicksMLCTreasureMap,
---        SurvivalGear        = TRUE,
---        WorldStaticModel    = Map,
---    }
-
-
 }

@@ -8,7 +8,7 @@ local function makeTreasureDist()
 
     for i, v in ipairs(RicksMLC_TreasureHunt.Treasures) do
         local distKey = "RicksMLC_" .. v
-        treasureDist[distKey] = { Bag_DuffelBagTINT = {rolls = 8, items = {v, 200}}, junk = {rolls = 1, items = {}} }
+        treasureDist[distKey] = { Bag_DuffelBagTINT = {rolls = 12, items = {v, 200}}, junk = {rolls = 1, items = {}} }
     end
     
     --RicksMLC_SharedUtils.DumpArgs(treasureDist, 0, "RicksMLC_Scratch_Distributions makeTreasureDist() treasureDist")

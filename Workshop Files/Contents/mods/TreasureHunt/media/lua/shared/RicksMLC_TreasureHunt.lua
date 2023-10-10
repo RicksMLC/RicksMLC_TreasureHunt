@@ -50,13 +50,19 @@ RicksMLC_TreasureHunt.MapDefnFn = function(mapUI)
 	MapUtils.overlayPaper(mapUI)
 end
 
-local function isDuplicateBuilding(x, y)
-    local treasureMaps = getGameTime():getModData()["RicksMLC_TreasureHunt"]
-    if not treasureMaps then return false end
+local function calcBuildingCentre(buildingDef)
+    return {x = buildingDef:getX() + PZMath.roundToInt(buildingDef:getW() / 2),
+            y = buildingDef:getY() + PZMath.roundToInt(buildingDef:getH() / 2)}
+end
 
-    for i, treasureDetails in ipairs(treasureMaps) do
-        if treasureDetails.Map.buildingCentreX == x and treasureDetails.Map.buildingCentreY == y then 
-            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt: isDuplicateBuilding detected")
+local function isDuplicateBuilding(nearestBuildingDef, existingMaps)
+
+    local buildingCentre = calcBuildingCentre(nearestBuildingDef)
+    --DebugLog.log(DebugType.Mod, "nearestBuildingCentre: x: " .. tostring(buildingCentre.x) .. " y: " .. tostring(buildingCentre.y))
+    for i, treasureDetails in ipairs(existingMaps) do
+        --DebugLog.log(DebugType.Mod, "   x: " .. tostring(treasureDetails.buildingCentreX) .. " y: " .. tostring(treasureDetails.buildingCentreY) )
+        if treasureDetails.buildingCentreX == buildingCentre.x and treasureDetails.buildingCentreY == buildingCentre.y then 
+           DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt: isDuplicateBuilding detected. x: " .. tostring(treasureDetails.buildingCentreX) .. " y: " .. tostring(treasureDetails.buildingCentreY))
            return true
         end
     end
@@ -64,20 +70,20 @@ local function isDuplicateBuilding(x, y)
 end
 
 -- Choose a random buiding for the treasure.
-function RicksMLC_TreasureHunt.ChooseRandomBuilding(mapBounds)
+function RicksMLC_TreasureHunt.ChooseRandomBuilding(mapBounds, existingMaps)
     local x = ZombRand(mapBounds.x1, mapBounds.x2)
     local y = ZombRand(mapBounds.y1, mapBounds.y2)
     local closestXY = Vector2f:new(1000, 1000)
     local nearestBuildingDef = AmbientStreamManager.instance:getNearestBuilding(x,  y, closestXY)
     local retries = 20
-    while (not nearestBuildingDef or nearestBuildingDef:isHasBeenVisited() or isDuplicateBuilding(x, y)) and retries > 0 do
+    while (not nearestBuildingDef or nearestBuildingDef:isHasBeenVisited() or isDuplicateBuilding(nearestBuildingDef, existingMaps) and retries > 0) do
         x = ZombRand(mapBounds.x1, mapBounds.x2)
         y = ZombRand(mapBounds.y1, mapBounds.y2)
         nearestBuildingDef = AmbientStreamManager.instance:getNearestBuilding(x,  y, closestXY)
         retries = retries - 1
     end
     
-    if not nearestBuildingDef then
+    if not nearestBuildingDef or retries == 0 then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.ChooseRandomBuilding() Error. No buildings within bounds " 
                     .. " x1: " .. tostring(mapBounds.x1) .. " x2: " .. tostring(mapBounds.x2) 
                     .. " y1: " .. tostring(mapBounds.y1) .. " y2: " .. tostring(mapBounds.y2))
@@ -86,18 +92,20 @@ function RicksMLC_TreasureHunt.ChooseRandomBuilding(mapBounds)
     return nearestBuildingDef
 end
 
-function RicksMLC_TreasureHunt.CreateTreasureMap(treasure, mapBounds)
+function RicksMLC_TreasureHunt.CreateTreasureMap(treasure, mapBounds, existingMaps)
     local treasureData = {}
 
-    treasureData.Building = RicksMLC_TreasureHunt.ChooseRandomBuilding(mapBounds)
+    treasureData.Building = RicksMLC_TreasureHunt.ChooseRandomBuilding(mapBounds, existingMaps)
     if not treasureData.Building then 
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CreateTreasureMap ERROR: No building found for mapBounds " .. tostring(mapBounds))
+        return nil
     end
 
     treasureData.Treasure = treasure
     treasureData.barricades = ZombRand(100)
-    treasureData.buildingCentreX = treasureData.Building:getX() + PZMath.roundToInt(treasureData.Building:getW() / 2)
-    treasureData.buildingCentreY = treasureData.Building:getY() + PZMath.roundToInt(treasureData.Building:getH() / 2)
+    local buildingCentre = calcBuildingCentre(treasureData.Building)
+    treasureData.buildingCentreX = buildingCentre.x
+    treasureData.buildingCentreY = buildingCentre.y
     return treasureData
 end
 
@@ -117,6 +125,7 @@ function RicksMLC_TreasureHunt.AddStashMaps(treasureMaps)
         local stashMapName = RicksMLC_TreasureHunt.GenerateMapName(i)
         local stashDesc = stashLookup[stashMapName]
         if not stashDesc then
+            --DebugLog.log(DebugType.Mod, "   Adding stash for " .. treasureData.Treasure)
             local newStashMap = RicksMLC_TreasureHuntStash.AddStash(
                 stashMapName,
                 treasureData.buildingCentreX,
@@ -141,9 +150,9 @@ function RicksMLC_TreasureHunt.GenerateTreasures()
     for i, treasure in ipairs(RicksMLC_TreasureHunt.Treasures) do
         local randomTown = RicksMLC_MapUtils.GetRandomTown()
         local mapBounds = RicksMLC_MapUtils.GetMapExtents(randomTown.Town, randomTown.MapNum)
-        treasureMaps[i] = RicksMLC_TreasureHunt.CreateTreasureMap(treasure, mapBounds)
+        treasureMaps[i] = RicksMLC_TreasureHunt.CreateTreasureMap(treasure, mapBounds, treasureMaps)
+        if not treasureMaps[i] then return end -- If no building could be found abort.
         treasureMaps[i].Town = randomTown
-        local mapName = RicksMLC_TreasureHunt.GenerateMapName(i)
     end
     getGameTime():getModData()["RicksMLC_TreasureHunt"] = {CurrentMapNum = 0, Maps = treasureMaps, Finished = false}
 end
@@ -183,7 +192,7 @@ function RicksMLC_TreasureHunt.FindMissingTreasureItem(itemContainer)
 	    local itemList = itemContainer:getAllTypeRecurse(treasureType)
         if itemList:isEmpty() then
             -- not found, so return it as the next thing to find
-            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.FindMissingTreasureItem() missing '" .. treasureType .. "'")
+            --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.FindMissingTreasureItem() missing '" .. treasureType .. "'")
             return {TreasureNum = i, Treasure = treasureType}
         end
     end
@@ -196,7 +205,7 @@ function RicksMLC_TreasureHunt.CheckContainerForTreasure(itemContainer)
     if missingTreasureItem then
         if treasureHunt.CurrentMapNum == missingTreasureItem.TreasureNum then
             -- The missing treasure is already assigned to CurrentMapNum
-            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckPlayerLootForTreasure() The missing treasure is already assigned to CurrentMapNum: " .. tostring(treasureHunt.CurrentMapNum))
+            --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckPlayerLootForTreasure() The missing treasure is already assigned to CurrentMapNum: " .. tostring(treasureHunt.CurrentMapNum))
             return false
         end
         treasureHunt.CurrentMapNum = missingTreasureItem.TreasureNum
@@ -256,7 +265,7 @@ end
 
 function RicksMLC_TreasureHunt.Dump(player)
     local treasureHunt = getGameTime():getModData()["RicksMLC_TreasureHunt"]
-    RicksMLC_SharedUtils.DumpArgs(treasureHunt, 0, "RicksMLC_TreasureHunt")
+    --RicksMLC_SharedUtils.DumpArgs(treasureHunt, 0, "RicksMLC_TreasureHunt")
 
     -- FIXME: Remove this debugging code for pre-reinit test:
     -- DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.Dump() StashSystem.getPossibleStashes()")
@@ -277,7 +286,6 @@ function RicksMLC_TreasureHunt.Dump(player)
             RicksMLC_StashUtils.Dump(nearestBuildingDef, map.Treasure, map.buildingCentreX,  map.buildingCentreY)
         end
     end
-
 end
 
 ---------------------------------------------
@@ -304,8 +312,8 @@ end
 function RicksMLC_TreasureHunt.OnKeyPressed(key)
     if key == Keyboard.KEY_F10 then
         -- FIXME: Reset() does not work.  Maybe it never will and should not.
-        --RicksMLC_TreasureHunt.InitTreasureHunt()
-        RicksMLC_TreasureHunt.Dump(getPlayer())
+        --RicksMLC_TreasureHunt.GenerateTreasures()
+        --RicksMLC_TreasureHunt.Dump(getPlayer())
     end
 end
 
@@ -326,6 +334,6 @@ function RicksMLC_TreasureHunt.OnGameStart()
 end
 
 Events.OnGameStart.Add(RicksMLC_TreasureHunt.OnGameStart)
-Events.OnKeyPressed.Add(RicksMLC_TreasureHunt.OnKeyPressed)
+--Events.OnKeyPressed.Add(RicksMLC_TreasureHunt.OnKeyPressed)
 Events.OnCreatePlayer.Add(RicksMLC_TreasureHunt.OnCreatePlayer)
 
