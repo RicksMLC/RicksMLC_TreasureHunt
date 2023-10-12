@@ -1,5 +1,5 @@
 -- RicksMLC_TreasureHunt.lua
--- Controls the treasure hunt.
+-- Controls a treasure hunt.
 
 require "StashDescriptions/RicksMLC_TreasureHuntStash"
 require "RicksMLC_MapUtils"
@@ -138,14 +138,7 @@ function RicksMLC_TreasureHunt:GenerateMapName(i)
     return "RicksMLC_TreasureMap" .. tostring(i)
 end
 
-function RicksMLC_TreasureHunt:AddStashMaps()
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddStashMaps()")
-    local stashLookup = {}
-    for i, stashDesc in ipairs(StashDescriptions) do
-        stashLookup[stashDesc.name] = stashDesc
-    end
-    for i, treasureData in ipairs(self.ModData.Maps) do
-        -- Check if the stash already exists
+function RicksMLC_TreasureHunt:AddStashMap(treasureData, i, stashLookup)
         local stashMapName = self:GenerateMapName(i)
         local stashDesc = stashLookup[stashMapName]
         if not stashDesc then
@@ -159,20 +152,44 @@ function RicksMLC_TreasureHunt:AddStashMaps()
                 treasureData.Treasure)
         else
             DebugLog.log(DebugType.Mod, "  Found stash for " .. treasureData.Treasure)
-            RicksMLC_SharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
+        RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
         end
         LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
         self.MapIDLookup[self:GenerateMapName(i)] = i
     end
+
+function RicksMLC_TreasureHunt:AddStashMaps()
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddStashMaps()")
+    local stashLookup = {}
+    for i, stashDesc in ipairs(StashDescriptions) do
+        stashLookup[stashDesc.name] = stashDesc
+    end
+    for i, treasureData in ipairs(self.ModData.Maps) do
+        -- Check if the stash already exists
+        self:AddStashMap(treasureData, i, stashLookup)
+        -- local stashMapName = self:GenerateMapName(i)
+        -- local stashDesc = stashLookup[stashMapName]
+        -- if not stashDesc then
+        --     DebugLog.log(DebugType.Mod, "   Adding stash for " .. treasureData.Treasure)
+        --     local newStashMap = RicksMLC_TreasureHuntStash.AddStash(
+        --         stashMapName,
+        --         treasureData.buildingCentreX,
+        --         treasureData.buildingCentreY, 
+        --         treasureData.barricades, 
+        --         "Base." .. stashMapName,
+        --         treasureData.Treasure)
+        -- else
+        --     DebugLog.log(DebugType.Mod, "  Found stash for " .. treasureData.Treasure)
+        --     RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
+        -- end
+        -- LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
+        -- self.MapIDLookup[self:GenerateMapName(i)] = i
+    end
 end
 
-function RicksMLC_TreasureHunt:GenerateTreasures()
-    if isServer() then 
-        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateTreasures() isServer() no action")
-        return
-    end
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateTreasures() Creating treasure maps begin")
-    for i, treasure in ipairs(self.Treasures) do
+-- GenerateTreasure(treasure,i) Generate the given treasure into the i'th position.
+-- The generated map is stored in the i'th postition in the self.ModData.Maps
+function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i)
         if self.ModData.Maps[i] then
             DebugLog.log(DebugType.Mod, "    Existing treasure: " .. treasure .. " " .. self.ModData.Maps[i].Town.Town)
         else
@@ -181,8 +198,29 @@ function RicksMLC_TreasureHunt:GenerateTreasures()
             self.ModData.Maps[i] = self:CreateTreasureData(treasure, mapBounds)
             if not self.ModData.Maps[i] then return end -- If no building could be found abort.
             self.ModData.Maps[i].Town = randomTown
+        self:SaveModData()
             DebugLog.log(DebugType.Mod, "    New treasure: "  .. treasure .. " " .. self.ModData.Maps[i].Town.Town)
         end
+    end
+
+function RicksMLC_TreasureHunt:GenerateTreasures()
+    -- if isServer() then 
+    --     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateTreasures() isServer() no action")
+    --     return
+    -- end
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateTreasures() Creating treasure maps begin")
+    for i, treasure in ipairs(self.Treasures) do
+        self:GenerateTreasure(treasure, i)
+        -- if self.ModData.Maps[i] then
+        --     DebugLog.log(DebugType.Mod, "    Existing treasure: " .. treasure .. " " .. self.ModData.Maps[i].Town.Town)
+        -- else
+        --     local randomTown = RicksMLC_MapUtils.GetRandomTown()
+        --     local mapBounds = RicksMLC_MapUtils.GetMapExtents(randomTown.Town, randomTown.MapNum)
+        --     self.ModData.Maps[i] = self:CreateTreasureData(treasure, mapBounds)
+        --     if not self.ModData.Maps[i] then return end -- If no building could be found abort.
+        --     self.ModData.Maps[i].Town = randomTown
+        --     DebugLog.log(DebugType.Mod, "    New treasure: "  .. treasure .. " " .. self.ModData.Maps[i].Town.Town)
+        -- end
     end
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateTreasures() End")
 end
@@ -192,7 +230,6 @@ function RicksMLC_TreasureHunt:InitStashMaps()
     -- The reinit is necessary when adding a stash after the game is started.
     -- If the StashSystem is not reinitialised the StashSystem.getStash() not find the stash, even if the
     -- stash name is in the StashSystem.getPossibleStashes():get(i):getName()
-    
     StashSystem.reinit()
 end
 
@@ -208,6 +245,11 @@ function RicksMLC_TreasureHunt:SaveModData()
     getGameTime():getModData()["RicksMLC_TreasureHunt"] = self.ModData
 end
 
+-- InitTreasureHunt() 
+-- Load the stored data for any existing hunt
+-- Generate the treasure data required for the hunt
+-- Initialise the stash maps that correspond with the generated treasure data.
+-- Detect if the player requires a new map, and set a zombie to "give" a map if required.
 function RicksMLC_TreasureHunt:InitTreasureHunt()
     self:LoadModData()
     self:GenerateTreasures()
@@ -217,7 +259,7 @@ function RicksMLC_TreasureHunt:InitTreasureHunt()
     end
     self:SaveModData()
     self.Initialised = true
-    RicksMLC_SharedUtils.DumpArgs(self.ModData, 0, "InitTreasureHunt post GenerateTreasures")
+    RicksMLC_THSharedUtils.DumpArgs(self.ModData, 0, "InitTreasureHunt post GenerateTreasures")
     self:InitStashMaps()
     if self:CheckPlayerLootForTreasure(getPlayer()) then
         self:PrepareNextMap()
@@ -304,7 +346,7 @@ function RicksMLC_TreasureHunt:PrepareNextMap()
 end
 
 function RicksMLC_TreasureHunt:Dump()
-    RicksMLC_SharedUtils.DumpArgs(self.ModData, 0, "RicksMLC_TreasureHunt")
+    RicksMLC_THSharedUtils.DumpArgs(self.ModData, 0, "RicksMLC_TreasureHunt")
 
     if self.ModData.Maps[self.ModData.CurrentMapNum] then
         local map = self.ModData.Maps[self.ModData.CurrentMapNum]

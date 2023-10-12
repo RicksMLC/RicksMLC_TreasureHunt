@@ -11,7 +11,7 @@ local function makeTreasureDist()
         treasureDist[distKey] = { Bag_DuffelBagTINT = {rolls = 12, items = {v, 200}}, junk = {rolls = 1, items = {}} }
     end
     
-    --RicksMLC_SharedUtils.DumpArgs(treasureDist, 0, "RicksMLC_Scratch_Distributions makeTreasureDist() treasureDist")
+    --RicksMLC_THSharedUtils.DumpArgs(treasureDist, 0, "RicksMLC_Scratch_Distributions makeTreasureDist() treasureDist")
 
     table.insert(Distributions, 2, treasureDist)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt_Distributions makeTreasureDist() end")

@@ -9,11 +9,11 @@ local function dumpStash(stashMap)
 
     local tmpTable = dist[stashMap.spawnTable]
     if tmpTable then
-        RicksMLC_SharedUtils.DumpArgs(tmpTable, 0, "SuburbsDistributions stashMap.spawnTable")
+        RicksMLC_THSharedUtils.DumpArgs(tmpTable, 0, "SuburbsDistributions stashMap.spawnTable")
     end
     local tmpProcTable = ProceduralDistributions.list[stashMap.spawnTable .. "Proc"]
     if tmpProcTable then
-        RicksMLC_SharedUtils.DumpArgs(tmpProcTable, 0, "stashMap.spawnTable .. Proc")
+        RicksMLC_THSharedUtils.DumpArgs(tmpProcTable, 0, "stashMap.spawnTable .. Proc")
     end
 end
 
