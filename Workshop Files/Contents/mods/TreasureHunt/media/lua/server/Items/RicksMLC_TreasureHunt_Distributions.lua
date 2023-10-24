@@ -1,12 +1,12 @@
 require "Items/Distributions"
 require "Items/ProceduralDistributions"
-require "RicksMLC_TreasureHunt"
+require "RicksMLC_TreasureHuntMgr"
 
 local function makeTreasureDist()
     --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt_Distributions makeTreasureDist() start")
     local treasureDist = {}
 
-    for i, v in ipairs(RicksMLC_TreasureHunt.Instance().Treasures) do
+    for i, v in ipairs(RicksMLC_TreasureHuntMgr.Instance().Treasures) do
         local distKey = "RicksMLC_" .. v
         treasureDist[distKey] = { Bag_DuffelBagTINT = {rolls = 12, items = {v, 200}}, junk = {rolls = 1, items = {}} }
     end

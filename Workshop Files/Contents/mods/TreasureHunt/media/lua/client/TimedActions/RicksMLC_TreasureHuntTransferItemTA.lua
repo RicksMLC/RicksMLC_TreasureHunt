@@ -2,11 +2,11 @@
 -- Override the ISInventoryTransferAction:transferItem(item) (or something) so I can detect placing the treasure into the player inventory.
 
 require "TimedActions/ISInventoryTransferAction"
-require "RicksMLC_TreasureHunt"
+require "RicksMLC_TreasureHuntMgr"
 
 local origTransferFn = ISInventoryTransferAction.perform
 function ISInventoryTransferAction.perform(self)
     origTransferFn(self)
 
-    RicksMLC_TreasureHunt.HandleTransferActionPerform()
+    RicksMLC_TreasureHuntMgr.HandleIfTreasureFound()
 end
