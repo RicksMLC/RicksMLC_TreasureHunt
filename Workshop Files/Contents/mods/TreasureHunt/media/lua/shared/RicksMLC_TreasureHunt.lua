@@ -67,6 +67,12 @@ function RicksMLC_TreasureHunt:new(treasureHuntDefn, huntId)
     --     "Spiffo"
     -- }
 
+    -- Treasure lookup
+    o.TreasureLookup = {}
+    for i, v in ipairs(o.Treasures) do
+        o.TreasureLookup[v] = i
+    end
+
     o.HuntId = huntId
     o.MapIDLookup = {}
 
@@ -105,7 +111,7 @@ function RicksMLC_TreasureHunt:setBoundsInSquares(mapAPI, mapNum)
         treasureData = self.ModData.Maps[mapNum]
     end
     local dx = 600
-    local dy = 500
+    local dy = 400
     if treasureData then
         mapAPI:setBoundsInSquares(treasureData.buildingCentreX - dx, treasureData.buildingCentreY - dy, treasureData.buildingCentreX + dx, treasureData.buildingCentreY + dy)
     end
@@ -128,13 +134,18 @@ local function calcBuildingCentre(buildingDef)
             y = buildingDef:getY() + PZMath.roundToInt(buildingDef:getH() / 2)}
 end
 
+function RicksMLC_TreasureHunt:IsSameBuilding(treasureData, buildingDef)
+    local buildingCentre = calcBuildingCentre(buildingDef)
+    return treasureData.buildingCentreX == buildingCentre.x and treasureData.buildingCentreY == buildingCentre.y
+end
+
 function RicksMLC_TreasureHunt:IsDuplicateBuilding(nearestBuildingDef)
     local buildingCentre = calcBuildingCentre(nearestBuildingDef)
     --DebugLog.log(DebugType.Mod, "nearestBuildingCentre: x: " .. tostring(buildingCentre.x) .. " y: " .. tostring(buildingCentre.y))
-    for i, treasureDetails in ipairs(self.ModData.Maps) do
-        --DebugLog.log(DebugType.Mod, "   x: " .. tostring(treasureDetails.buildingCentreX) .. " y: " .. tostring(treasureDetails.buildingCentreY) )
-        if treasureDetails.buildingCentreX == buildingCentre.x and treasureDetails.buildingCentreY == buildingCentre.y then 
-           DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt: isDuplicateBuilding detected. x: " .. tostring(treasureDetails.buildingCentreX) .. " y: " .. tostring(treasureDetails.buildingCentreY))
+    for i, treasureData in ipairs(self.ModData.Maps) do
+        --DebugLog.log(DebugType.Mod, "   x: " .. tostring(treasureData.buildingCentreX) .. " y: " .. tostring(treasureDetails.buildingCentreY) )
+        if treasureData.buildingCentreX == buildingCentre.x and treasureData.buildingCentreY == buildingCentre.y then 
+           DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt: isDuplicateBuilding detected. x: " .. tostring(treasureData.buildingCentreX) .. " y: " .. tostring(treasureData.buildingCentreY))
            return true
         end
     end
@@ -213,12 +224,12 @@ function RicksMLC_TreasureHunt:AddStashMap(treasureData, i, stashLookup)
             treasureData.zombies,
             "Base." .. stashMapName,
             treasureData.Treasure)
+        newStashMap:addStamp(nil, self.Name .. ": " .. treasureData.Treasure, treasureData.buildingCentreX-100, treasureData.buildingCentreY - 100, 0, 0, 1) -- symbol,text,mapX,mapY,r,g,b
     else
         DebugLog.log(DebugType.Mod, "  Found stash for " .. treasureData.Treasure)
         RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
     end
     LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
-    --MapIDLookup[self:GenerateMapName(i)] = i
     RicksMLC_MapIDLookup.Instance():AddMapID(self:GenerateMapName(i), self.HuntId, i)
 end
 
@@ -238,7 +249,7 @@ end
 -- The generated map is stored in the i'th postition in the self.ModData.Maps
 function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown)
     if self.ModData.Maps[i] then
-        DebugLog.log(DebugType.Mod, "    Existing treasure: " .. treasure .. " " .. self.ModData.Maps[i].Town.Town)
+        --DebugLog.log(DebugType.Mod, "    Existing treasure: " .. treasure .. " " .. self.ModData.Maps[i].Town.Town)
     else
         local town = nil
         if optionalTown then
@@ -251,7 +262,7 @@ function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown)
         if not self.ModData.Maps[i] then return end -- If no building could be found abort.
         self.ModData.Maps[i].Town = town
         self:SaveModData()
-        DebugLog.log(DebugType.Mod, "    New treasure: "  .. treasure .. " " .. self.ModData.Maps[i].Town.Town)
+        --DebugLog.log(DebugType.Mod, "    New treasure: "  .. treasure .. " " .. self.ModData.Maps[i].Town.Town)
     end
 end
 
@@ -260,11 +271,11 @@ function RicksMLC_TreasureHunt:GenerateTreasures()
     --     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateTreasures() isServer() no action")
     --     return
     -- end
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateTreasures() Creating treasure maps begin")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateTreasures() Creating treasure maps begin")
     for i, treasure in ipairs(self.Treasures) do
         self:GenerateTreasure(treasure, i, self.Town)
     end
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateTreasures() End")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateTreasures() End")
 end
 
 function RicksMLC_TreasureHunt:InitStashMaps()
@@ -283,7 +294,8 @@ function RicksMLC_TreasureHunt:LoadModData()
     end
     self.ModData = getGameTime():getModData()["RicksMLC_TreasureHunt"][self.Name]
     if not self.ModData then
-        self.ModData = {CurrentMapNum = 0, Maps = {}, Finished = false, LastSpawnedMapNum = 0}
+        self.ModData = {CurrentMapNum = 0, Maps = {}, Finished = false, LastSpawnedMapNum = 0, 
+                        Statistics = {Start = nil, End = nil, Kills = nil, Deaths = nil}}
     end
     return self.ModData
 end
@@ -323,32 +335,46 @@ end
 -----------------------------------------------------------------------
 -- Functions for finding treasure in the player/container inventory
 
-function RicksMLC_TreasureHunt:FindMissingTreasureItem(itemContainer)
-	-- https://projectzomboid.com/modding////zombie/inventory/ItemContainer.html
-    for i, treasureType in ipairs(self.Treasures) do
-	    local itemList = itemContainer:getAllTypeRecurse(treasureType)
-        if itemList:isEmpty() then
-            -- not found, so return it as the next thing to find
-            --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.FindMissingTreasureItem() missing '" .. treasureType .. "'")
-            return {TreasureNum = i, Treasure = treasureType}
-        end
-    end
-	return nil
-end
+-- function RicksMLC_TreasureHunt.IsTreasureHuntItem(x, obj)
+--     return x:getType() == obj.Treasures[obj.ModData.CurrentMapNum]
+--        and x:getModData()["RicksMLC_Treasure"] == obj:GenerateMapName(self.ModData.CurrentMapNum)
+-- end
 
-function RicksMLC_TreasureHunt:CheckContainerForTreasure(itemContainer)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckContainerForTreasure()")
-    local missingTreasureItem = self:FindMissingTreasureItem(itemContainer)
-    if missingTreasureItem then
-        if self.ModData.CurrentMapNum == missingTreasureItem.TreasureNum then
-            -- The missing treasure is already assigned to CurrentMapNum
+-- function RicksMLC_TreasureHunt:FoundMissingTreasureItem(itemContainer)
+--     local itemList = ArrayList:new()
+--     itemContainer:getAllEvalArgRecurse(RicksMLC_TreasureHunt.IsTreasureHuntItem, self, itemList)
+--     if not itemList:isEmpty() then
+--         item = itemList:get(0):getType()
+--         -- not found, so return it as the next thing to find
+--         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.FindMissingTreasureItem() found treasure " .. tostring(self.ModData.CurrentMapNum) .. " '" .. item:getType() .. "'")
+--         return {TreasureNum = obj.ModData.CurrentMapNum, Treasure = item:getType()}
+--     end
+--     return nil
+-- end
+
+
+function RicksMLC_TreasureHunt:CheckContainerForMissingTreasure(itemContainer, currentBuildingDef)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckContainerForMissingTreasure() " .. self.Name)
+    -- Find the first missing treasure in the treasure sequence for this hunt.
+
+    -- Check you are in the treasure building before moving the hunt to the next item, so
+    -- if you happen to find the item in the world it does not progress the hunt until you get to the building.
+
+    local foundTreasureItem = self:FoundMissingTreasureItem(itemContainer)
+    if foundTreasureItem then
+        local treasureData = self.ModData.Maps[self.ModData.CurrentMapNum]
+        if self.ModData.CurrentMapNum > 0 and not self:IsSameBuilding(treasureData, currentBuildingDef) then return false end
+
+        if self.ModData.CurrentMapNum >= missingTreasureItem.TreasureNum then
+            -- The missing treasure is already assigned to CurrentMapNum, so the map has already been generated or is set to be generated.
             return false
         end
+
         self.ModData.CurrentMapNum = missingTreasureItem.TreasureNum
         self:SaveModData()
         return true
     else
-        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckPlayerLootForTreasure All treasure found.")
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckPlayerLootForMissingTreasure All treasure found.")
         self.Finished = true
         self.ModData.Finished = true
         self:SaveModData()
@@ -356,12 +382,66 @@ function RicksMLC_TreasureHunt:CheckContainerForTreasure(itemContainer)
     end
 end
 
-function RicksMLC_TreasureHunt:CheckPlayerLootForTreasure(player)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckPlayerLootForTreasure()")
+
+
+
+
+
+function RicksMLC_TreasureHunt:FindMissingTreasureItemOLD(itemContainer)
+	-- https://projectzomboid.com/modding////zombie/inventory/ItemContainer.html
+    for i, treasureType in ipairs(self.Treasures) do
+	    local itemList = itemContainer:getAllTypeRecurse(treasureType)
+        if itemList:isEmpty() then
+            -- not found, so return it as the next thing to find
+            --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.FindMissingTreasureItem() missing '" .. treasureType .. "'")
+            return {TreasureNum = i, Treasure = treasureType}
+        else
+            -- Check if the item is from another treasure hunt:
+            --item:getModData()["RicksMLC_Treasure"] = self:GenerateMapName(self.ModData.CurrentMapNum)
+        end
+    end
+	return nil
+end
+
+function RicksMLC_TreasureHunt:CheckContainerForMissingTreasureOLD(itemContainer, currentBuildingDef)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckContainerForMissingTreasure() " .. self.Name)
+    -- Find the first missing treasure in the treasure sequence for this hunt.
+
+    -- Check you are in the treasure building before moving the hunt to the next item, so
+    -- if you happen to find the item in the world it does not progress the hunt until you get to the building.
+
+    local missingTreasureItem = self:FindMissingTreasureItem(itemContainer)
+    if missingTreasureItem then
+        local treasureData = self.ModData.Maps[self.ModData.CurrentMapNum]
+        if self.ModData.CurrentMapNum > 0 and not self:IsSameBuilding(treasureData, currentBuildingDef) then return false end
+
+        if self.ModData.CurrentMapNum >= missingTreasureItem.TreasureNum then
+            -- The missing treasure is already assigned to CurrentMapNum, so the map has already been generated or is set to be generated.
+            return false
+        end
+
+        self.ModData.CurrentMapNum = missingTreasureItem.TreasureNum
+        self:SaveModData()
+        return true
+    else
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckPlayerLootForMissingTreasure All treasure found.")
+        self.Finished = true
+        self.ModData.Finished = true
+        self:SaveModData()
+        return false
+    end
+end
+
+function RicksMLC_TreasureHunt:CheckPlayerLootForMissingTreasure(player)
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CheckPlayerLootForMissingTreasure()")
+    -- The check for treasure only applies inside a treasure stash building.
+    local currentBuildingDef = getPlayer():getCurrentBuildingDef()
+    if not currentBuildingDef then return false end
+
 	local itemContainer = player:getInventory() -- lootInv is an ISInventoryPage or an ItemContainer
 	if not itemContainer then return false end
 	
-    return self:CheckContainerForTreasure(itemContainer)
+    return self:CheckContainerForMissingTreasure(itemContainer, currentBuildingDef)
 end
 
 function RicksMLC_TreasureHunt:GenerateNextMap()
@@ -380,13 +460,13 @@ function RicksMLC_TreasureHunt:GenerateNextMap()
     local treasureItem = InventoryItemFactory.CreateItem("Base." .. treasureData.Treasure)
     mapItem:setMapID(self:GenerateMapName(self.ModData.CurrentMapNum))
     StashSystem.doStashItem(stash, mapItem)
-    mapItem:setName(mapItem:getDisplayName() .. ": " .. treasureItem:getDisplayName())
+    mapItem:setName(mapItem:getDisplayName() .. ": " .. self.Name .. " (" .. tostring(self.ModData.CurrentMapNum) .. ")")-- treasureItem:getDisplayName())
     mapItem:setCustomName(true)
     return mapItem
 end
 
 function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddNextMapToZombie()")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddNextMapToZombie()")
     local mapItem = self:GenerateNextMap()
     zombie:addItemToSpawnAtDeath(mapItem)
 end
@@ -411,19 +491,87 @@ function RicksMLC_TreasureHunt:ResetCurrentMapNum()
     end
 end
 
-function RicksMLC_TreasureHunt:CheckIfNewMapNeeded()
-    if self.Finished then return false end
+function RicksMLC_TreasureHunt.IsTreasureHuntItem(x, obj)
+    return x:getType() == obj.Treasures[obj.ModData.CurrentMapNum]
+       and x:getModData()["RicksMLC_Treasure"] == obj:GenerateMapName(self.ModData.CurrentMapNum)
+end
 
-    return self:CheckPlayerLootForTreasure(getPlayer())
+function RicksMLC_TreasureHunt:FoundMissingTreasureItem(itemContainer)
+    local itemList = ArrayList:new()
+    itemContainer:getAllEvalArgRecurse(RicksMLC_TreasureHunt.IsTreasureHuntItem, self, itemList)
+    if not itemList:isEmpty() then
+        item = itemList:get(0):getType()
+        -- not found, so return it as the next thing to find
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.FindMissingTreasureItem() found treasure " .. tostring(self.ModData.CurrentMapNum) .. " '" .. item:getType() .. "'")
+        return {TreasureNum = obj.ModData.CurrentMapNum, Treasure = item:getType()}
+    end
+    return nil
+end
+
+
+local function matchAnyTreasureClosure(x, obj)
+    if x:getModData()["RicksMLC_Treasure"] == "Not a treasure item" then return false end
+    local matchItem = obj.TreasureLookup[x:getType()]
+    if matchItem then
+        return true
+    end
+    return false
+end
+
+
+function RicksMLC_TreasureHunt:CheckIfNewMapNeeded()
+    if self.Finished then return {UnassignedItems = {}, NewMapNeeded = false} end
+
+    local possibleTreasureItems = {}
+    -- Check if the current treasure has been added to the player inventory
+    if self.ModData.CurrentMapNum == 0 then
+        self.ModData.CurrentMapNum = 1
+        self:SaveModData()
+    else
+        local treasureData = self.ModData.Maps[self.ModData.CurrentMapNum]
+        local itemContainer = getPlayer():getInventory()
+        local itemList = itemContainer:getAllEvalArgRecurse(matchAnyTreasureClosure, self) --treasureData.Treasure)
+        if not itemList:isEmpty() then
+            for i = 0, itemList:size()-1 do 
+                local item = itemList:get(i)
+                local currentBuildingDef = getPlayer():getCurrentBuildingDef()
+                if currentBuildingDef and self:IsSameBuilding(treasureData, currentBuildingDef) then
+                    if not item:getModData()["RicksMLC_Treasure"] or item:getModData()["RicksMLC_Treasure"] == "Possible Treasure Item" then
+                        -- Assign this treasure to the current map
+                        item:getModData()["RicksMLC_Treasure"] = self:GenerateMapName(self.ModData.CurrentMapNum)
+                        if self.ModData.CurrentMapNum == #self.Treasures then
+                            self.Finished = true
+                            self.ModData.Finished = true
+                        else
+                            self.ModData.CurrentMapNum = self.ModData.CurrentMapNum + 1
+                        end
+                        self:SaveModData()
+                    end
+                else
+                    -- This item is not a real treasure item.
+                    local itemModData = item:getModData()["RicksMLC_Treasure"]
+                    if not itemModData then
+                        item:getModData()["RicksMLC_Treasure"] = "Possible Treasure Item"
+                        possibleTreasureItems[#possibleTreasureItems+1] = item
+                    end
+                end
+            end
+        end
+    end
+
+    --local isMissingTreasure = self:CheckPlayerLootForMissingTreasure(getPlayer())
+    --return self.ModData.CurrentMapNum > self.ModData.LastSpawnedMapNum
+    return {UnassignedItems = possibleTreasureItems, NewMapNeeded = self.ModData.CurrentMapNum > self.ModData.LastSpawnedMapNum}
 end
 
 function RicksMLC_TreasureHunt:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.OnHitZombie()")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.OnHitZombie()")
     if self.Finished then return false end
     -- Make sure it's not just any character that hits the zombie
     if character == getPlayer() and self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum then
         self:AddNextMapToZombie(zombie)
         self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum
+        self:SaveModData()
     end
 end
 

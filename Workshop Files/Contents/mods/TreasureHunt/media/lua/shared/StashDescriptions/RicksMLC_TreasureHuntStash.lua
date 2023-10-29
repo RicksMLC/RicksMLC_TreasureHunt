@@ -1,6 +1,6 @@
 -- RicksMLC_TreasureHunt stash
 require "StashDescriptions/StashUtil"
-require "../server/Items/Distributions"
+require "server/Items/Distributions"
 
 
 local function dumpStash(stashMap)
