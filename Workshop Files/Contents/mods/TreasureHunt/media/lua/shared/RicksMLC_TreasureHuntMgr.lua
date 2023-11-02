@@ -49,9 +49,7 @@ function RicksMLC_TreasureHuntMgr:new()
             "MoleyMole",
             "PancakeHedgehog",
             "Spiffo" }},
-        {Name = "The Big Boss", Town = "SpecialCase", Barricades = {80, 100}, Zombies = {1, 5}, Treasures = {"SpiffoBig"}},
         {Name = "Maybe Helpful", Town = "FallusLake", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}}, -- GenMag
-        {Name = "Test Local Power Box", Town = "PowerBox", Barricades = 0, Zombies = 0, Treasures = {"SpiffoBig"}}
 
     }
 
@@ -99,7 +97,7 @@ function RicksMLC_TreasureHuntMgr:GetMapPath()
     if not mapLookup then
         return RicksMLC_MapUtils.GetDefaultMapPath()
     end
-    local mapPath = self.TreasureHunts[mapLookup.HuntId]:GetMapPath()
+    local mapPath = self.TreasureHunts[mapLookup.HuntId]:GetMapPath(mapLookup.MapNum)
     return mapPath or RicksMLC_MapUtils.GetDefaultMapPath()
 end
 
@@ -146,6 +144,15 @@ function RicksMLC_TreasureHuntMgr:InitTreasureHunts()
     if newMapsNeeded then
         RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
     end
+end
+
+function RicksMLC_TreasureHuntMgr:GetMapFromTreasureHunt(name)
+    for i, treasureHunt in ipairs(self.TreasureHunts) do
+        if treasureHunt.Name == name then 
+            return treasureHunt:GenerateNextMap()
+        end
+    end
+    return nil
 end
 
 ------------------------------------------------------------

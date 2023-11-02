@@ -42,7 +42,6 @@ RicksMLC_MapInfo.Westpoint = {10820, 6500, 12389, 7469, defaultMap}
 RicksMLC_MapInfo.MarchRidge = {9700, 12470, 10579, 13199, defaultMap}
 RicksMLC_MapInfo.FallusLake = {6900, 8000, 7510, 8570, defaultMap}
 
-RicksMLC_MapInfo.SpecialCase = {6416, 5420, 6467, 5476, defaultMap} -- Riverside school
-RicksMLC-MapInfo.PowerBox = {8173, 11213, 8178, 11218, defaultMap} -- Power box Rosewood
+
 
 
