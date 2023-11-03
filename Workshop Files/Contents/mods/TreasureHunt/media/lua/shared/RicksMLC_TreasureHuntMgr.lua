@@ -23,20 +23,6 @@ function RicksMLC_TreasureHuntMgr:new()
 	self.__index = self
 
     o.Initialised = false
-
-    -- FIXME: Temporary treasure definitions for the RicksMLC_TreasureHunt_Distributions.lua
-    o.Treasures = {
-            "BorisBadger",
-            "FluffyfootBunny",
-            "FreddyFox",
-            "FurbertSquirrel",
-            "JacquesBeaver",
-            "MoleyMole",
-            "PancakeHedgehog",
-            "Spiffo",
-            "SpiffoBig",
-            "ElectronicsMag4"
-        }
     
     -- Treasure Hunt Definitions: { Name = string, Barricades = {min, max} | n, Zombies = {min, max} | n, Treasures = {string, string...}, Town = nil | string) }
     o.TreasureHuntDefinitions = {
@@ -50,7 +36,6 @@ function RicksMLC_TreasureHuntMgr:new()
             "PancakeHedgehog",
             "Spiffo" }},
         {Name = "Maybe Helpful", Town = "FallusLake", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}}, -- GenMag
-
     }
 
     o.TreasureHunts = {}
@@ -87,7 +72,6 @@ function RicksMLC_MapIDLookup:AddMapID(mapId, huntId, mapNum)
     self.Lookup[mapId] = {HuntId = huntId, MapNum = mapNum}
 end
 
---function RicksMLC_TreasureHunt.SetReadingMap(item) RicksMLC_TreasureHunt.Instance().readingMapID = item end
 function RicksMLC_MapIDLookup:SetReadingMap(item) self.readingMapID = item end
 function RicksMLC_MapIDLookup:GetReadingMap() return self.Lookup[self.readingMapID] end
 
@@ -149,7 +133,7 @@ end
 function RicksMLC_TreasureHuntMgr:GetMapFromTreasureHunt(name)
     for i, treasureHunt in ipairs(self.TreasureHunts) do
         if treasureHunt.Name == name then 
-            return treasureHunt:GenerateNextMap()
+            return treasureHunt:GenerateNextTreasureMap()
         end
     end
     return nil
@@ -216,33 +200,12 @@ function RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart()
     triggerEvent("RicksMLC_TreasureHuntMgr_InitDone") 
 end
 
-function RicksMLC_TreasureHuntMgr.OnCreatePlayer(playerIndex, player)
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnCreatePlayer start " .. tostring(playerIndex))
-    if RicksMLC_TreasureHuntMgr.Instance().Initialised then
-        --RicksMLC_TreasureHunt.Instance().ModData.CurrentMapNum = 0
-        --RicksMLC_TreasureHuntMgr.Instance():ResetAllCurrentHuntMapNums()
-    end
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnCreatePlayer end")
-end
-
+-- Use this for testing/prototyping only
 function RicksMLC_TreasureHuntMgr.OnKeyPressed(key)
     if key == Keyboard.KEY_F10 then
-        -- FIXME: Remove when testing Init is complete
-        --RicksMLC_TreasureHuntMgr.Instance():InitTreasureHunts()
-        --RicksMLC_TreasureHuntMgr.HandleTransferActionPerform()
-
-        -- local buildingDef = getPlayer():getCurrentBuildingDef()
-        -- if buildingDef then
-        --     local sq = buildingDef:getFreeSquareInRoom()
-        --     if sq then
-        --         DebugLog.log(DebugType.Mod, "Free square")
-        --     else
-        --         DebugLog.log(DebugType.Mod, "No free square")
-        --     end
-        -- end
     end
 end
 
-Events.OnKeyPressed.Add(RicksMLC_TreasureHuntMgr.OnKeyPressed)
+-- Commented out code - uncomment to make temp test
+--Events.OnKeyPressed.Add(RicksMLC_TreasureHuntMgr.OnKeyPressed)
 Events.OnGameStart.Add(RicksMLC_TreasureHuntMgr.OnGameStart)
-Events.OnCreatePlayer.Add(RicksMLC_TreasureHuntMgr.OnCreatePlayer)

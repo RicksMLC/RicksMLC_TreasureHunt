@@ -1,4 +1,7 @@
 -- RicksMLC_ReadMapOverride.lua
+-- Overrides the onCheckMap function to record the mapId currently being read, so the TreasureHunt
+-- can look up the correct map bounds to correspond with it in the LootMaps.Init[stashMapName]
+
 require "ISUI/ISInventoryPaneContextMenu"
 require "ISUI/Maps/ISMap"
 require "RicksMLC_TreasureHuntMgr"

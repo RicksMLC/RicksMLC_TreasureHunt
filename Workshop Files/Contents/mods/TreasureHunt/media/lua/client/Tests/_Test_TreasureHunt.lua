@@ -7,6 +7,7 @@
 require "ISBaseObject"
 
 require "RicksMLC_TreasureHuntMgr"
+require "Items/RicksMLC_TreasureHuntDistributions"
 
 local MockPlayer = ISBaseObject:derive("MockPlayer");
 function MockPlayer:new(player)
@@ -87,6 +88,20 @@ function TreasureHunt_Test:newInventoryItem(type)
 	return item
 end
 
+local function experimenalAddTreasureHuntItemLate()
+    -- Experimental code for generating treasure hunts with any item after the SuburbsDistributions has been cached.
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnKeyPressed() start")
+    local distributionTestDefn = {Name = "Test: Distribution Needle", Town = "Greenport", Barricades = 20, Zombies = 1, Treasures = {"Needle"}}
+    RicksMLC_TreasureHuntDistributions.Instance():AddTreasureToDistribution("Needle")
+    ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
+    RicksMLC_TreasureHuntMgr.Instance():AddTreasureHunt(distributionTestDefn, true)
+    local dist = SuburbsDistributions
+    local tmpTable = dist["RicksMLC_Needle"]
+    if tmpTable then
+        RicksMLC_THSharedUtils.DumpArgs(tmpTable, 0, "OnKeyPressed() SuburbsDistributions")
+    end
+end
+
 function TreasureHunt_Test:Run()
     DebugLog.log(DebugType.Mod, "TreasureHunt_Test:Run()")
     if not self.isReady then
@@ -100,8 +115,12 @@ function TreasureHunt_Test:Run()
     RicksMLC_MapUtils.AddTown("SpecialCase", {6416, 5420, 6467, 5476, defaultMap}) -- Riverside school
     RicksMLC_MapUtils.AddTown("PowerBox", {8173, 11213, 8178, 11218, defaultMap}) -- Power box Rosewood
 
+    RicksMLC_TreasureHuntDistributions.Instance():AddTreasureToDistribution("SpiffoBig")
+    ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
     RicksMLC_TreasureHuntMgr.Instance():AddTreasureHunt(self.riverSideSchoolTestDefn, true) -- Force map onto first zombie
     RicksMLC_TreasureHuntMgr.Instance():AddTreasureHunt(self.powerBoxTestDefn, true) -- Force map onto first zombie
+
+    experimenalAddTreasureHuntItemLate()
 
     self.resultsWindow:createChildren()
 
@@ -192,6 +211,7 @@ function TreasureHunt_Test.HandleOnKeyPressed(key)
 	if key == Keyboard.KEY_F10 and TreasureHunt_Test.IsTestSave() then
         DebugLog.log(DebugLog.Mod, "TreasureHunt_Test.HandleOnKeyPressed() Execute test")
         TreasureHunt_Test.Execute()
+        Events.OnKeyPressed.Remove(TreasureHunt_Test.HandleOnKeyPressed)
     end
 end
 

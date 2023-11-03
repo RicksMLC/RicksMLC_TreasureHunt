@@ -1,4 +1,5 @@
 -- RicksMLC_StashDebug.lua
+-- Overrides the vanilla StashDebug.onClick so it does not crash when the use clicks on a TreasureHunt stash.
 
 require "DebugUIs/StashDebug"
 require "RicksMLC_TreasureHuntMgr"
