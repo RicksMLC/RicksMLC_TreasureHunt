@@ -2,11 +2,11 @@
 -- Controls a treasure hunt.
 
 -- Each treasure hunt contains one or more treaure maps.  These treasure maps are produced and read in sequence.
--- At any one time there is only one treasure map visible to the player via the Annotated Map.
+-- At any one time there is only one "current" treasure map visible to the player via the Annotated Maps vanilla feature.
 -- A treasure map consists of the TreasureData (see CreateTreasureData()) which is the raw data needed
 -- to construct a working Stash and Annotated Map.  The TreasureData is generated from the treasure map definition
 -- given by the TreasureHuntMgr.  Some of the attributes are random (such as the selection of the town and building).
--- Therefore once a TreasureData is intitialised it is stored in the ModData so on subsequent runs of PZ the TreasureData
+-- Therefore, once a TreasureData is intitialised it is stored in the ModData so on subsequent runs of PZ the TreasureData
 -- does not change.
 --
 -- AddStashMap: Stash Maps (which is what Annotated Maps are interinally) must be loaded into the StashSystem at runtime
