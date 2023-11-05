@@ -92,9 +92,9 @@ local function experimenalAddTreasureHuntItemLate()
     -- Experimental code for generating treasure hunts with any item after the SuburbsDistributions has been cached.
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnKeyPressed() start")
     local distributionTestDefn = {Name = "Test: Distribution Needle", Town = "Greenport", Barricades = 20, Zombies = 1, Treasures = {"Needle"}}
-    RicksMLC_TreasureHuntDistributions.Instance():AddTreasureToDistribution("Needle")
-    ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
-    RicksMLC_TreasureHuntMgr.Instance():AddTreasureHunt(distributionTestDefn, true)
+    RicksMLC_TreasureHuntDistributions.Instance():AddSingleTreasureToDistribution("Needle")
+    --ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
+    RicksMLC_TreasureHuntMgr.Instance():AddTreasureHunt(distributionTestDefn)
     local dist = SuburbsDistributions
     local tmpTable = dist["RicksMLC_Needle"]
     if tmpTable then
@@ -115,10 +115,10 @@ function TreasureHunt_Test:Run()
     RicksMLC_MapUtils.AddTown("SpecialCase", {6416, 5420, 6467, 5476, defaultMap}) -- Riverside school
     RicksMLC_MapUtils.AddTown("PowerBox", {8173, 11213, 8178, 11218, defaultMap}) -- Power box Rosewood
 
-    RicksMLC_TreasureHuntDistributions.Instance():AddTreasureToDistribution("SpiffoBig")
-    ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
-    RicksMLC_TreasureHuntMgr.Instance():AddTreasureHunt(self.riverSideSchoolTestDefn, true) -- Force map onto first zombie
-    RicksMLC_TreasureHuntMgr.Instance():AddTreasureHunt(self.powerBoxTestDefn, true) -- Force map onto first zombie
+    RicksMLC_TreasureHuntDistributions.Instance():AddSingleTreasureToDistribution("SpiffoBig")
+    --ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
+    RicksMLC_TreasureHuntMgr.Instance():AddTreasureHunt(self.riverSideSchoolTestDefn) -- Force map onto first zombie
+    RicksMLC_TreasureHuntMgr.Instance():AddTreasureHunt(self.powerBoxTestDefn) -- Force map onto first zombie
 
     experimenalAddTreasureHuntItemLate()
 

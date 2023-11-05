@@ -1,4 +1,18 @@
 -- RicksMLC_TreasureHuntMgr.lua
+-- Treasure Hunt Definitions: { Name = string, Barricades = {min, max} | n, Zombies = {min, max} | n, Treasures = {string, string...}, Town = nil | string) }
+-- Example:
+    -- o.TreasureHuntDefinitions = {
+    --     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15}, Treasures = {
+    --         "BorisBadger",
+    --         "FluffyfootBunny",
+    --         "FreddyFox",
+    --         "FurbertSquirrel",
+    --         "JacquesBeaver",
+    --         "MoleyMole",
+    --         "PancakeHedgehog",
+    --         "Spiffo" }},
+    --     {Name = "Maybe Helpful", Town = "FallusLake", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}}, -- GenMag
+    -- }
 
 require "ISBaseObject"
 require "RicksMLC_TreasureHunt"
@@ -23,20 +37,6 @@ function RicksMLC_TreasureHuntMgr:new()
 	self.__index = self
 
     o.Initialised = false
-    
-    -- Treasure Hunt Definitions: { Name = string, Barricades = {min, max} | n, Zombies = {min, max} | n, Treasures = {string, string...}, Town = nil | string) }
-    o.TreasureHuntDefinitions = {
-        {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15}, Treasures = {
-            "BorisBadger",
-            "FluffyfootBunny",
-            "FreddyFox",
-            "FurbertSquirrel",
-            "JacquesBeaver",
-            "MoleyMole",
-            "PancakeHedgehog",
-            "Spiffo" }},
-        {Name = "Maybe Helpful", Town = "FallusLake", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}}, -- GenMag
-    }
 
     o.TreasureHunts = {}
 
@@ -94,42 +94,66 @@ end
 
 function RicksMLC_TreasureHuntMgr:LoadModData()
     self.ModData = getGameTime():getModData()["RicksMLC_TreasureHuntMgr"]
-    return self.ModData
+    if not self.ModData then
+        getGameTime():getModData()["RicksMLC_TreasureHuntMgr"] = {}
+        self.ModData = {}
+    end
 end
 
 function RicksMLC_TreasureHuntMgr:SaveModData()
     getGameTime():getModData()["RicksMLC_TreasureHuntMgr"] = self.ModData
 end
 
+function RicksMLC_TreasureHuntMgr:IsDuplicate(treasureHuntDefn, huntList)
+    for i, defn in ipairs(huntList) do
+        -- TODO: Make a name unique if required.  Just silently fail for now?
+        if defn.Name == treasureHuntDefn.Name then return true end
+    end
+    return false
+end
+
+function RicksMLC_TreasureHuntMgr:UpdateTreasureHuntDefns(treasureHuntDefn)
+    if self:IsDuplicate(treasureHuntDefn, self.ModData.TreasureHuntDefinitions) then return end
+
+    self.ModData.TreasureHuntDefinitions[#self.ModData.TreasureHuntDefinitions+1] = treasureHuntDefn
+    self:SaveModData()
+end
+
 -- Treasure Hunt Definitions: { Name = string, Barricades = {min, max} | n, Zombies = {min, max} | n, Treasures = {string, string...}, Town = nil | string) }
-function RicksMLC_TreasureHuntMgr:AddTreasureHunt(treasureHuntDefn, addMapToZombie)
+function RicksMLC_TreasureHuntMgr:AddTreasureHunt(treasureHuntDefn, isFromModData)
+    if self:IsDuplicate(treasureHuntDefn, self.TreasureHunts) then return end
+
     self.TreasureHunts[#self.TreasureHunts+1] = RicksMLC_TreasureHunt:new(treasureHuntDefn, #self.TreasureHunts+1)
     self.TreasureHunts[#self.TreasureHunts]:InitTreasureHunt()
-    if addMapToZombie then
         local checkResult = self.TreasureHunts[#self.TreasureHunts]:CheckIfNewMapNeeded()
         if checkResult.NewMapNeeded then
             RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
         end
+
+    if isFromModData then return end -- Avoid infinite loop/leak by not adding to the ModData
+
+    self:UpdateTreasureHuntDefns(treasureHuntDefn)
+    return
+end
+
+function RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions(treasureHuntDefinitions, isFromModData)
+    for i, treasureHuntDefn in ipairs(treasureHuntDefinitions) do
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions() '" .. treasureHuntDefn.Name .. "'")
+        self:AddTreasureHunt(treasureHuntDefn, isFromModData)
     end
 end
 
 function RicksMLC_TreasureHuntMgr:InitTreasureHunts()
     triggerEvent("RicksMLC_TreasureHuntMgr_PreInit")
-
-    local newMapsNeeded = false
-    if self:LoadModData() == nil then
-        for i, treasureHuntDefn in ipairs(self.TreasureHuntDefinitions) do
-            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitTreasureHunts() '" .. treasureHuntDefn.Name .. "'")
-            self:AddTreasureHunt(treasureHuntDefn, false)
-            local checkResult = self.TreasureHunts[#self.TreasureHunts]:CheckIfNewMapNeeded()
-            newMapsNeeded = checkResult.NewMapNeeded or newMapsNeeded
-        end
-    end
-    if newMapsNeeded then
-        RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
+    self:LoadModData()
+    if self.ModData.TreasureHuntDefinitions == nil then
+        self.ModData.TreasureHuntDefinitions = {}
+    else
+        self:LoadTreasureHuntDefinitions(self.ModData.TreasureHuntDefinitions, true)
     end
 end
 
+-- This method provides compatibility with the vanilla StashDebug dialog
 function RicksMLC_TreasureHuntMgr:GetMapFromTreasureHunt(name)
     for i, treasureHunt in ipairs(self.TreasureHunts) do
         if treasureHunt.Name == name then 
@@ -137,6 +161,16 @@ function RicksMLC_TreasureHuntMgr:GetMapFromTreasureHunt(name)
         end
     end
     return nil
+end
+
+-- Special function for loading the sample treasure hunts once.
+function RicksMLC_TreasureHuntMgr:LoadSampleTreasureHunts()
+    if self.ModData.SamplesLoaded then return end
+
+    RicksMLC_SampleTreasureHunts.LoadSampleTreasureHunts()
+
+    self.ModData.SamplesLoaded = true
+    self:SaveModData()
 end
 
 ------------------------------------------------------------
@@ -194,7 +228,6 @@ function RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart()
     startCount = startCount + 1
     if startCount < 2 then return end
     RicksMLC_TreasureHuntMgr.Instance():InitTreasureHunts()
-    --RicksMLC_TreasureHuntMgr.HandleIfTreasureFound()
     RicksMLC_TreasureHuntMgr.Initialsed = true
     Events.EveryOneMinute.Remove(RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart)
     triggerEvent("RicksMLC_TreasureHuntMgr_InitDone") 

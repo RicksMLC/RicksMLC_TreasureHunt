@@ -1,0 +1,36 @@
+Project Plan.txt
+
+Features:
+    [+] Treasure Hunt
+        [+] Treasure Hunt is Initialsed, Generated and Stash populated.
+        [+] Determine if a treasure hunt item is found and the next map needs generating
+        [+] Spawns a treasure map when a zombie is hit.
+        [+] Each Treasure Map is generated when needed (ie: when a zombie is hit)
+        [ ] Allow each treasure in the list to have an optional town/co-ords for its position, instead of the one Town.
+    [+] Treasure Hunt Mgr
+        [+] Init populates default treasure hunts
+        [+] Detects treasure found and sets the treasure hunt to spawn a new map
+    [-] Samples
+        [+] Intial sample run/load/save reproduced from the old TreasureHuntMgr hard-coded treasure hunt
+        [+] Document process of creating a treasure hunt from scratch
+        [ ] Treasure Hunt Distributions sample
+    [-] Tresure Hunt Distributions
+        [+] Add a new distribution after the vanilla post-distributions event has occurred.  This makes on-the-fly treasure maps possible
+            [ ] Needs investiation to see if calling the ItemPickerJava.Parse() in RicksMLC_TreasureHuntDistributions is correct.
+        [ ] Multiple items in a single treasure hunt map  - Phase 3?
+    [ ] Add functions to apply extra map annotations on map definition
+    [ ] Can map annotations be added after definition?
+    [ ] Return error code if duplicate treasure hunt name detected
+
+Future Features:
+    [ ] Spawn a TreasureMap as part of the loot table, instead of on a zombie?
+
+Test Plan:
+    [+] Sandbox option for loading Samples
+    [+] Samples are loaded once only
+    [+] Samples are re-loaded using the ModData
+    [+] Add a new treasure hunt (Greenport Secrets qualifies as a new treasure hunt)
+    [-] Added treasure hunt is re-loaded on subsequent startup
+    [-] Do not add a treasure hunt with the same name (avoid duplicates)
+
+    

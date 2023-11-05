@@ -40,8 +40,4 @@ RicksMLC_MapInfo.Rosewood = {7900, 11140, 8604, 12139, defaultMap}
 RicksMLC_MapInfo.Riverside = {6000, 5035, 6899, 5669, defaultMap}
 RicksMLC_MapInfo.Westpoint = {10820, 6500, 12389, 7469, defaultMap}
 RicksMLC_MapInfo.MarchRidge = {9700, 12470, 10579, 13199, defaultMap}
-RicksMLC_MapInfo.FallusLake = {6900, 8000, 7510, 8570, defaultMap}
-
-
-
 

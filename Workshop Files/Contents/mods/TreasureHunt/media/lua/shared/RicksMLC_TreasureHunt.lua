@@ -1,7 +1,7 @@
 -- RicksMLC_TreasureHunt.lua
 -- Controls a treasure hunt.
 
--- Each treasure hunt contains one or more treaure maps.  These treasure maps are produced and read in sequence.
+-- Each treasure hunt contains one or more treasure maps.  These treasure maps are produced and read in sequence.
 -- At any one time there is only one "current" treasure map visible to the player via the Annotated Maps vanilla feature.
 -- A treasure map consists of the TreasureData (see CreateTreasureData()) which is the raw data needed
 -- to construct a working Stash and Annotated Map.  The TreasureData is generated from the treasure map definition
@@ -29,7 +29,7 @@
 --     return mapItem
 --
 -- Generate Current Map:
---  The ModData has two fields: CurrentMapNum and LastSpawnedMapNum
+--  The ModData includes two fields: CurrentMapNum and LastSpawnedMapNum
 --      CurrentMapNum: The current map to read and find the treasure.
 --      LastSpawnedMapNum: The map last spawned on a zombie.
 --  The "treasure found" detection is performed in the RicksMLC_TreasureHuntMgr checking each time an item is moved to/from an inventory.
@@ -286,7 +286,6 @@ function RicksMLC_TreasureHunt:LoadModData()
         self.ModData = {CurrentMapNum = 0, Maps = {}, Finished = false, LastSpawnedMapNum = 0, 
                         Statistics = {Start = nil, End = nil, Kills = nil, Deaths = nil}}
     end
-    return self.ModData
 end
 
 function RicksMLC_TreasureHunt:SaveModData()
@@ -299,6 +298,10 @@ end
 function RicksMLC_TreasureHunt:AddNewTreasureToHunt(treasure, townName)
     local i = #self.ModData.Maps + 1
     self:GenerateTreasure(treasure, i, townName) -- FIXME: Add MapNum when it is part of the TreasureHuntMgr manual treasureHuntDefn
+    if not RicksMLC_TreasureHuntDistributions.Instance():IsInDistribution(treasure) then
+        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddNewTreasureToHunt() Adding item '" .. treasure .. "' to distribution")
+        RicksMLC_TreasureHuntDistributions.Instance():AddSingleTreasureToDistribution(treasure)
+    end
     self:AddStashMap(self.ModData.Maps[i], i)
 end
 
@@ -419,6 +422,17 @@ local function matchAnyTreasureClosure(x, obj)
     return false
 end
 
+function RicksMLC_TreasureHunt:RecordFoundTreasure(item)
+    item:getModData()["RicksMLC_Treasure"] = self:GenerateMapName(self.ModData.CurrentMapNum)
+    if self.ModData.CurrentMapNum == #self.Treasures then
+        self.Finished = true
+        self.ModData.Finished = true
+    else
+        self.ModData.CurrentMapNum = self.ModData.CurrentMapNum + 1
+    end
+    self:SaveModData()
+end
+
 function RicksMLC_TreasureHunt:CheckIfNewMapNeeded()
     if self.Finished then return {UnassignedItems = {}, NewMapNeeded = false} end
 
@@ -436,16 +450,16 @@ function RicksMLC_TreasureHunt:CheckIfNewMapNeeded()
                 local item = itemList:get(i)
                 local currentBuildingDef = getPlayer():getCurrentBuildingDef()
                 if currentBuildingDef and treasureData and self:IsSameBuilding(treasureData, currentBuildingDef) then
-                    if not item:getModData()["RicksMLC_Treasure"] or item:getModData()["RicksMLC_Treasure"] == "Possible Treasure Item" then
-                        -- Assign this treasure to the current map
-                        item:getModData()["RicksMLC_Treasure"] = self:GenerateMapName(self.ModData.CurrentMapNum)
-                        if self.ModData.CurrentMapNum == #self.Treasures then
-                            self.Finished = true
-                            self.ModData.Finished = true
-                        else
-                            self.ModData.CurrentMapNum = self.ModData.CurrentMapNum + 1
+                    if not item:getModData()["RicksMLC_Treasure"] then 
+                        -- This is the first time the item has been seen and this is the correct place
+                        self:RecordFoundTreasure(item)
+                    else
+                        local itemModData = item:getModData()["RicksMLC_Treasure"]
+                        if itemModData == "Possible Treasure Item" then
+                            -- This item has been recorded as "possible" in another treasure hunt, so this is it.
+                            -- Assign this treasure to the current map
+                            self:RecordFoundTreasure(item)
                         end
-                        self:SaveModData()
                     end
                 else
                     -- This item is not a real treasure item.

@@ -1,0 +1,9 @@
+VERSION = 1,
+
+option RicksMLC_TreasureHunt.SamplesOn
+{
+	type = boolean,
+	default = true,
+	page = RicksMLC_TreasureHunt,
+	translation = RicksMLC_TreasureHunt_SamplesOn,
+}

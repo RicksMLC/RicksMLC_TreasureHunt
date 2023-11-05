@@ -24,14 +24,24 @@ function RicksMLC_TreasureHuntDistributions:new()
     return o
 end
 
+function RicksMLC_TreasureHuntDistributions:IsInDistribution(itemType)
+    local dist = SuburbsDistributions
+    local tmpTable = dist["RicksMLC_" .. itemType]
+    return tmpTable ~= nil
+end
+
 function RicksMLC_TreasureHuntDistributions:AddTreasureToDistribution(itemType)
     DebugLog.log(DebugType.Mod, "AddTreasureToDist(itemType) Start")
+    if self:IsInDistribution(itemType) then
+        DebugLog.log(DebugType.Mod, "AddTreasureToDist(itemType) Item '" .. itemType .. "' is already in a distribution. End")
+        return
+    end
+
     local treasureDist = {}
     local distKey = "RicksMLC_" .. itemType
     treasureDist[distKey] = { Bag_DuffelBagTINT = {rolls = 1, items = {itemType, 200000}}, junk = {rolls = 1, items = {}} }
     MergeDistributionRecursive(SuburbsDistributions, treasureDist)
     RicksMLC_THSharedUtils.DumpArgs(treasureDist, 0, "RicksMLC_Scratch_Distributions AddTreasureToDist treasureDist")
-
     local dist = SuburbsDistributions
     local tmpTable = dist[distKey]
     if tmpTable then
@@ -41,10 +51,16 @@ function RicksMLC_TreasureHuntDistributions:AddTreasureToDistribution(itemType)
     DebugLog.log(DebugType.Mod, "AddTreasureToDist(itemType) End")
 end
 
+function RicksMLC_TreasureHuntDistributions:AddSingleTreasureToDistribution(itemType)
+    self:AddTreasureToDistribution(itemType)
+    ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
+end
+
 function RicksMLC_TreasureHuntDistributions:AddTreasureListToDistribution(treasureList)
     for i, v in ipairs(treasureList) do
         self:AddTreasureToDistribution(v)
     end
+    ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
 end
 
 local function postDistributionMerge()

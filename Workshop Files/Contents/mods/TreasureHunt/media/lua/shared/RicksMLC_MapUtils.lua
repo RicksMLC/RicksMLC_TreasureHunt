@@ -21,6 +21,9 @@ noBarricadeBuildings[1] = {x = 6442, y = 5448} -- Riverside school
 -----------------------------------------------------------
 RicksMLC_MapUtils = {}
 
+local defaultMap = 'media/maps/Muldraugh, KY'
+function RicksMLC_MapUtils.DefaultMap() return defaultMap end
+
 function RicksMLC_MapUtils.AddTown(townName, boundsList)
     RicksMLC_MapInfo[townName] = boundsList
 end
