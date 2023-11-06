@@ -18,11 +18,13 @@ Features:
         [+] Add a new distribution after the vanilla post-distributions event has occurred.  This makes on-the-fly treasure maps possible
             [ ] Needs investiation to see if calling the ItemPickerJava.Parse() in RicksMLC_TreasureHuntDistributions is correct.
         [ ] Multiple items in a single treasure hunt map  - Phase 3?
-    [ ] Add functions to apply extra map annotations on map definition
+    [ ] Add callback decorator function to apply extra map annotations on map definition - see RicksMLC_SampleTreasureHunts.lua
+    [ ] Investigate and add more addContainer() calls to add more things like survivor loot to the stashMap. see RicksMLC_SampleTreasureHunts.lua
     [ ] Can map annotations be added after definition?
     [ ] Return error code if duplicate treasure hunt name detected
 
 Future Features:
+    [ ] Multiplayer:  This is bigger than this one line item would suggest o.O
     [ ] Spawn a TreasureMap as part of the loot table, instead of on a zombie?
 
 Test Plan:

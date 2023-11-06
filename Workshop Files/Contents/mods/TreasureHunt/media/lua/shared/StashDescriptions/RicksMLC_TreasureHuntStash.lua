@@ -31,7 +31,8 @@ function RicksMLC_TreasureHuntStash.AddStash(newStashName, x, y, barricades, zom
     stashMap:addStamp(nil, "Stash_RicksMLC_TreasureMap_Text1", stashMap.buildingX + 20, stashMap.buildingY - 10, 1, 0, 0)
     stashMap.spawnTable = spawnTable
     -- StashUtil:addContainer(containerType,containerSprite,containerItem,room,x,y,z)
-    stashMap:addContainer(nil,nil,"Base.Bag_DuffelBagTINT",nil,nil,nil,nil)
+    -- NOTE: The containerItem matches with the distribution defined in RicksMLC_TreasureHuntDistributions:AddTreasureToDistribution(itemType)
+    stashMap:addContainer(nil,nil,"Base.Bag_DuffelBagTINT",nil,nil,nil,nil) 
     dumpStash(stashMap)
     return stashMap
 end

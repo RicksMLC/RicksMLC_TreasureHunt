@@ -2,7 +2,7 @@
 -- Treasure Hunt Definitions: { Name = string, Barricades = {min, max} | n, Zombies = {min, max} | n, Treasures = {string, string...}, Town = nil | string) }
 -- Example:
     -- o.TreasureHuntDefinitions = {
-    --     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15}, Treasures = {
+    --     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15}, DecoratorCallbackFn = callBackFn, Treasures = {
     --         "BorisBadger",
     --         "FluffyfootBunny",
     --         "FreddyFox",
@@ -125,10 +125,10 @@ function RicksMLC_TreasureHuntMgr:AddTreasureHunt(treasureHuntDefn, isFromModDat
 
     self.TreasureHunts[#self.TreasureHunts+1] = RicksMLC_TreasureHunt:new(treasureHuntDefn, #self.TreasureHunts+1)
     self.TreasureHunts[#self.TreasureHunts]:InitTreasureHunt()
-        local checkResult = self.TreasureHunts[#self.TreasureHunts]:CheckIfNewMapNeeded()
-        if checkResult.NewMapNeeded then
-            RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
-        end
+    local checkResult = self.TreasureHunts[#self.TreasureHunts]:CheckIfNewMapNeeded()
+    if checkResult.NewMapNeeded then
+        RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
+    end
 
     if isFromModData then return end -- Avoid infinite loop/leak by not adding to the ModData
 

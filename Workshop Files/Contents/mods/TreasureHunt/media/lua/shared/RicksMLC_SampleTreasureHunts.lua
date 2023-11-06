@@ -11,13 +11,33 @@
 --      Treasures = {string [, string...] }  -- TreasureList.  Comma separated list of items.  Each item will have its own map in sequence.
 --    }
 --
--- Possible change: Treasure can spawn in a specified building or location:
+-- Change #1: Treasure can spawn in a specified building or location:
 --  {
 --      {Item="BorisBadger"},                               -- Random building in random Town
---      {Item="BorisBadger", Town=townName},                -- Random building in specific Town
---      {Item="BorisBadger", BuildingX = x, BuildingY = y},   -- Specific building.
---      {Item="BorisBadger", X = x, Y = y, Z = z},                -- Stash container at that specific square.  The building set will be for that square.
+--      {Item="FluffyfootBunny", Town=townName},            -- Random building in specific Town
+--      {Item="FreddyFox", BuildingX = x, BuildingY = y},   -- Specific building.
+--      {Item="FurbertSquirrel", X = x, Y = y, Z = z},      -- Stash container at that specific square.  The building set will be for that square.
 --  }
+--
+-- Change #2: To annotations: The caller can specify a callback function which the RicksMLC_TreasureHunt:AddStashMap will call
+-- to decorate the map with custom annotations.
+--  {
+--      {Item="BorisBadger", Decorator=myDecoratorFunction},
+--  }
+--
+-- The Decorator function takes the stashMap as an argument to decorate with the vanilla StashUtils calls to addStamp() and addContainer()
+-- Params: stashMap: The stashMap to call addStamp() and addContainer().  x,y: Stash location.
+--      function MyDecoratorFn(stashMap, x, y)
+--          stashMap:addStamp("ArrowWest", nil, x+10, y, 1, 0, 0) -- The last three args are R G B colors between 0 and 1.
+--          stashMap:addStamp(nil, "Don't, whatever you do, look in here!", x+20, y+10, 1, 0, 0)
+--          stashMap:addStamp(nil, "Why not?", x+30, y-10, 0.25, 0.75, 0.1)
+--          stashMap:addContainer( ...some custom distribution container goes here... )
+--      end
+-- Note: The StashUtil:addContainer(containerType,containerSprite,containerItem,room,x,y,z) call is used to connect to the distribution.
+-- The containerItem matches with the distribution defined in RicksMLC_TreasureHuntDistributions:AddTreasureToDistribution(itemType)
+--
+-- Note: More custom symbols can be added by calling:
+--       MapSymbolDefinitions.getInstance():addTexture("ArrowWest", "media/ui/LootableMaps/map_arrowwest.png")
 --
 -- Town:
 --      A Town consists of the bounds of the town from x1, y1 to x2, y2 and the map image data.  For vanilla map regions

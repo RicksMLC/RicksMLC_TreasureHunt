@@ -44,6 +44,8 @@ require "RicksMLC_SharedUtils"
 require "RicksMLC_StashDescLookup"
 require "ISBaseObject"
 
+LuaEventManager.AddEvent("RicksMLC_TreasureHunt_Finished")
+
 RicksMLC_TreasureHunt = ISBaseObject:derive("RicksMLC_TreasureHunt");
 
 function RicksMLC_TreasureHunt:new(treasureHuntDefn, huntId)
@@ -56,6 +58,8 @@ function RicksMLC_TreasureHunt:new(treasureHuntDefn, huntId)
     o.Barricades = treasureHuntDefn.Barricades -- Single number or {min, max}
     o.Zombies = treasureHuntDefn.Zombies -- Single number or {min, max}
     o.Treasures = treasureHuntDefn.Treasures
+
+    o.TreasureHuntDefn = treasureHuntDefn
 
     -- Treasure lookup
     o.TreasureLookup = {}
@@ -221,9 +225,11 @@ function RicksMLC_TreasureHunt:AddStashMap(treasureData, i, stashLookup)
             treasureData.zombies,
             "Base." .. stashMapName,
             spawnTable)
+
+        -- TODO: Change this to a DecoratorCallback function so the treasureHuntDefn can customise the text and symbols on the map
         newStashMap:addStamp(nil, self.Name .. ": " .. treasureData.Treasure, treasureData.buildingCentreX-100, treasureData.buildingCentreY - 100, 0, 0, 1) -- symbol,text,mapX,mapY,r,g,b
     else
-        DebugLog.log(DebugType.Mod, "  Found stash for " .. treasureData.Treasure)
+        DebugLog.log(DebugType.Mod, "  Found existing stash for " .. treasureData.Treasure)
         RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
     end
     LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
@@ -305,11 +311,17 @@ function RicksMLC_TreasureHunt:AddNewTreasureToHunt(treasure, townName)
     self:AddStashMap(self.ModData.Maps[i], i)
 end
 
+function RicksMLC_TreasureHunt:FinishHunt()
+    self.Finished = true
+    self.ModData.Finished = true
+    self:SaveModData()
+    triggerEvent("RicksMLC_TreasureHunt_Finished", self.TreasureHuntDefn)
+end
+
 function RicksMLC_TreasureHunt:GenerateNextTreasureMap()
     local i = #self.ModData.Maps + 1
     if not self.Treasures[i] then
-        self.Finished = true
-        self:SaveModData()
+        self:FinishHunt()
         return
     end
     -- FIXME: Need to add the optional MapNum so maps like LV can be used...
@@ -425,12 +437,11 @@ end
 function RicksMLC_TreasureHunt:RecordFoundTreasure(item)
     item:getModData()["RicksMLC_Treasure"] = self:GenerateMapName(self.ModData.CurrentMapNum)
     if self.ModData.CurrentMapNum == #self.Treasures then
-        self.Finished = true
-        self.ModData.Finished = true
+        self:FinishHunt()
     else
         self.ModData.CurrentMapNum = self.ModData.CurrentMapNum + 1
+        self:SaveModData()
     end
-    self:SaveModData()
 end
 
 function RicksMLC_TreasureHunt:CheckIfNewMapNeeded()
