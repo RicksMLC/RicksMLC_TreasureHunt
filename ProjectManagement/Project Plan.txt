@@ -7,6 +7,7 @@ Features:
         [+] Spawns a treasure map when a zombie is hit.
         [+] Each Treasure Map is generated when needed (ie: when a zombie is hit)
         [ ] Allow each treasure in the list to have an optional town/co-ords for its position, instead of the one Town.
+        [ ] Allow a predicate for building selection so the map maker can set any criteria for a building (size, type, name, location etc...)
     [+] Treasure Hunt Mgr
         [+] Init populates default treasure hunts
         [+] Detects treasure found and sets the treasure hunt to spawn a new map
@@ -20,7 +21,7 @@ Features:
         [ ] Multiple items in a single treasure hunt map  - Phase 3?
     [ ] Add callback decorator function to apply extra map annotations on map definition - see RicksMLC_SampleTreasureHunts.lua
     [ ] Investigate and add more addContainer() calls to add more things like survivor loot to the stashMap. see RicksMLC_SampleTreasureHunts.lua
-    [ ] Can map annotations be added after definition?
+    [ ] Can map annotations be added after definition? - Not really.  See Java Stash.load()
     [ ] Return error code if duplicate treasure hunt name detected
 
 Future Features:

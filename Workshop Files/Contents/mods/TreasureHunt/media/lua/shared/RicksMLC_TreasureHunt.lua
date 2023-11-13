@@ -202,6 +202,7 @@ function RicksMLC_TreasureHunt:CreateTreasureData(treasure, mapBounds)
             treasureData.barricades = self.Barricades
         end
     end
+    treasureData.Found = false
     return treasureData
 end
 
@@ -262,6 +263,10 @@ function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown, optio
         local town = nil
         if optionalTown then
             town = {Town = optionalTown, MapNum = optionalMapNum}
+            -- Temporary random fix for LV town until optionalMapNum is passed in
+            if optionalTown == "Louisville" then
+                town.MapNum = ZombRand(1, 9)
+            end
         else
             town = RicksMLC_MapUtils.GetRandomTown()
         end
@@ -312,7 +317,6 @@ function RicksMLC_TreasureHunt:AddNewTreasureToHunt(treasure, townName)
 end
 
 function RicksMLC_TreasureHunt:FinishHunt()
-    self.Finished = true
     self.ModData.Finished = true
     self:SaveModData()
     triggerEvent("RicksMLC_TreasureHunt_Finished", self.TreasureHuntDefn)
@@ -320,7 +324,7 @@ end
 
 function RicksMLC_TreasureHunt:GenerateNextTreasureMap()
     local i = #self.ModData.Maps + 1
-    if not self.Treasures[i] then
+    if not self.Treasures[i] and not self.ModData.Finished then
         self:FinishHunt()
         return
     end
@@ -370,7 +374,7 @@ function RicksMLC_TreasureHunt:GenerateNextMapItem()
     end
     local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
     mapItem:setMapID(self:GenerateMapName(self.ModData.CurrentMapNum))
-    StashSystem.doStashItem(stash, mapItem)
+    StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.
     mapItem:setName(mapItem:getDisplayName() .. ": " .. self.Name .. " [" .. tostring(self.ModData.CurrentMapNum) .. "]")-- treasureItem:getDisplayName())
     mapItem:setCustomName(true)
     return mapItem
@@ -386,7 +390,9 @@ end
 
 function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie)
     --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddNextMapToZombie()")
-    self:GenerateNextTreasureMap()
+    if not self.ModData.Maps[self.ModData.CurrentMapNum] or self.ModData.Maps[self.ModData.CurrentMapNum].Found then
+        self:GenerateNextTreasureMap()
+    end
     local mapItem = self:GenerateNextMapItem()
     zombie:addItemToSpawnAtDeath(mapItem)
     -- Check if the building has been visited before now.
@@ -436,6 +442,7 @@ end
 
 function RicksMLC_TreasureHunt:RecordFoundTreasure(item)
     item:getModData()["RicksMLC_Treasure"] = self:GenerateMapName(self.ModData.CurrentMapNum)
+    self.ModData.Maps[self.ModData.CurrentMapNum].Found = true
     if self.ModData.CurrentMapNum == #self.Treasures then
         self:FinishHunt()
     else
@@ -445,7 +452,7 @@ function RicksMLC_TreasureHunt:RecordFoundTreasure(item)
 end
 
 function RicksMLC_TreasureHunt:CheckIfNewMapNeeded()
-    if self.Finished then return {UnassignedItems = {}, NewMapNeeded = false} end
+    if self.ModData.Finished then return {UnassignedItems = {}, NewMapNeeded = false} end
 
     local possibleTreasureItems = {}
     -- Check if the current treasure has been added to the player inventory
@@ -487,9 +494,15 @@ function RicksMLC_TreasureHunt:CheckIfNewMapNeeded()
     return {UnassignedItems = possibleTreasureItems, NewMapNeeded = self.ModData.CurrentMapNum > self.ModData.LastSpawnedMapNum}
 end
 
+function RicksMLC_TreasureHunt:ResetLastSpawnedMapNum()
+    if self.ModData.Maps[self.ModData.CurrentMapNum] and not self.ModData.Finished and not self.ModData.Maps[self.ModData.CurrentMapNum].Found and self.ModData.CurrentMapNum > 0 then
+        self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum - 1
+    end
+end
+
 function RicksMLC_TreasureHunt:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon)
     --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.OnHitZombie()")
-    if self.Finished then return false end
+    if self.ModData.Finished then return false end
     -- Make sure it's not just any character that hits the zombie
     if character == getPlayer() and self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum then
         self:AddNextMapToZombie(zombie)

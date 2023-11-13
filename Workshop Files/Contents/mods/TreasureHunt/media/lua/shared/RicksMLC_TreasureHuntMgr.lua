@@ -2,7 +2,7 @@
 -- Treasure Hunt Definitions: { Name = string, Barricades = {min, max} | n, Zombies = {min, max} | n, Treasures = {string, string...}, Town = nil | string) }
 -- Example:
     -- o.TreasureHuntDefinitions = {
-    --     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15}, DecoratorCallbackFn = callBackFn, Treasures = {
+    --     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15},minTrapToSpawn = 1, DecoratorCallbackFn = callBackFn, Treasures = {
     --         "BorisBadger",
     --         "FluffyfootBunny",
     --         "FreddyFox",
@@ -209,6 +209,13 @@ function RicksMLC_TreasureHuntMgr.HandleTransferItemPerform()
     if needNewMap then 
         RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
     end
+end
+
+function RicksMLC_TreasureHuntMgr:ResetLostMaps()
+    for _, treasureHunt in ipairs(RicksMLC_TreasureHuntMgr.Instance().TreasureHunts) do
+        treasureHunt:ResetLastSpawnedMapNum()
+    end
+    self:SetOnHitZombieForNewMap()
 end
 
 function RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()

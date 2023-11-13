@@ -7,7 +7,8 @@
 --    { Name = string,                       -- This is a unique name for the hunt - no duplicates allowed.
 --      Town = nil | string,                 -- Town (optional) Name must match name in RicksMLC_MapInfo. Add custom Town with AddTown(). nil => random.
 --      Barricades = {min, max} | n,         -- % Barricades. Range for random between min and max, or a single number. 0 => no barricades.
---      Zombies = {min, max} | n,            -- Number of zombies in the building.  Range for random between min and max.
+--      Zombies = {min, max} | n,            -- % chance of zombie per tile in the zombie spawn formula. A non-zero value will have at least one zombie per room.
+--                                              Set to nil to have no zombies in the building.
 --      Treasures = {string [, string...] }  -- TreasureList.  Comma separated list of items.  Each item will have its own map in sequence.
 --    }
 --
