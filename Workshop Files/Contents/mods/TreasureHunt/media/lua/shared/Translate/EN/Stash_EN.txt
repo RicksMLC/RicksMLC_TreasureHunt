@@ -1,3 +1,5 @@
 Stash_EN = {
     Stash_RicksMLC_TreasureMap_Text1 = "Look in here",
+
+    Stash_RicksMLC_SampleMap_Text1 = "Really?  I thought that was cleaned out weeks ago?",
 },

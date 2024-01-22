@@ -19,16 +19,18 @@ end
 
 RicksMLC_TreasureHuntStash = {}
 
-function RicksMLC_TreasureHuntStash.AddStash(newStashName, x, y, barricades, zombies, mapItemName, spawnTable)
+function RicksMLC_TreasureHuntStash.DefaultDecorator(stashMap, x, y)
+    stashMap:addStamp("Circle", nil, x, y, 1, 0, 0)
+    stashMap:addStamp("ArrowWest", nil, x + 10, y, 1, 0, 0)
+    stashMap:addStamp(nil, "Stash_RicksMLC_TreasureMap_Text1", x + 20, y - 10, 1, 0, 0)
+end
 
+function RicksMLC_TreasureHuntStash.AddStash(newStashName, x, y, barricades, zombies, mapItemName, spawnTable)
     local stashMap = StashUtil.newStash(newStashName, "Map", mapItemName, "Stash_AnnotedMap")
     stashMap.buildingX = x
     stashMap.buildingY = y
     stashMap.barricades = barricades
     stashMap.zombies = zombies
-    stashMap:addStamp("Circle", nil, x, y, 1, 0, 0)
-    stashMap:addStamp("ArrowWest", nil, x + 10, y, 1, 0, 0)
-    stashMap:addStamp(nil, "Stash_RicksMLC_TreasureMap_Text1", stashMap.buildingX + 20, stashMap.buildingY - 10, 1, 0, 0)
     stashMap.spawnTable = spawnTable
     -- StashUtil:addContainer(containerType,containerSprite,containerItem,room,x,y,z)
     -- NOTE: The containerItem matches with the distribution defined in RicksMLC_TreasureHuntDistributions:AddTreasureToDistribution(itemType)

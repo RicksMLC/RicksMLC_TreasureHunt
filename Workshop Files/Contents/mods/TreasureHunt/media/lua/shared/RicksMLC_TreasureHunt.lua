@@ -227,8 +227,13 @@ function RicksMLC_TreasureHunt:AddStashMap(treasureData, i, stashLookup)
             "Base." .. stashMapName,
             spawnTable)
 
-        -- TODO: Change this to a DecoratorCallback function so the treasureHuntDefn can customise the text and symbols on the map
-        newStashMap:addStamp(nil, self.Name .. ": " .. treasureData.Treasure, treasureData.buildingCentreX-100, treasureData.buildingCentreY - 100, 0, 0, 1) -- symbol,text,mapX,mapY,r,g,b
+        -- Call any Decorator Callback function defined for this treasure item to customise the text and symbols on the map
+        if self.TreasureHuntDefn.Decorators and self.TreasureHuntDefn.Decorators[i] then
+            local decorator = RicksMLC_MapDecorators.Instance():Get(self.TreasureHuntDefn.Decorators[i])
+            decorator(newStashMap, treasureData.buildingCentreX, treasureData.buildingCentreY)
+        else
+            RicksMLC_TreasureHuntStash.DefaultDecorator(newStashMap, treasureData.buildingCentreX, treasureData.buildingCentreY)
+        end
     else
         DebugLog.log(DebugType.Mod, "  Found existing stash for " .. treasureData.Treasure)
         RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")

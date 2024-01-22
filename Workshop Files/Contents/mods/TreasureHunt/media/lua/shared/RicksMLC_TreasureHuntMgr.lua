@@ -2,7 +2,7 @@
 -- Treasure Hunt Definitions: { Name = string, Barricades = {min, max} | n, Zombies = {min, max} | n, Treasures = {string, string...}, Town = nil | string) }
 -- Example:
     -- o.TreasureHuntDefinitions = {
-    --     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15},minTrapToSpawn = 1, DecoratorCallbackFn = callBackFn, Treasures = {
+    --     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15}, minTrapToSpawn = 1, Treasures = {
     --         "BorisBadger",
     --         "FluffyfootBunny",
     --         "FreddyFox",
@@ -10,8 +10,10 @@
     --         "JacquesBeaver",
     --         "MoleyMole",
     --         "PancakeHedgehog",
-    --         "Spiffo" }},
-    --     {Name = "Maybe Helpful", Town = "FallusLake", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}}, -- GenMag
+    --         "Spiffo" },
+    --      Decorators = {[2] = "FluffyFootDecorator"}
+    --    },
+    --    {Name = "Maybe Helpful", Town = "SampleEkronTown", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}, Decorators = {[1] = "SampleGenMagDecorator"}}, -- GenMag
     -- }
 
 require "ISBaseObject"
@@ -45,8 +47,41 @@ function RicksMLC_TreasureHuntMgr:new()
 end
 
 -------------------------------------------
+-- Map decorator function register.
+-- Since the ModData cannot store function pointers the Decorators are registered with a name->fn lookup. 
+-- The decorator in the TreasureHuntDefinition is the name of the decorator which is registered in the RicksMLC_MapDecorators.
+RicksMLC_MapDecorators = ISBaseObject:derive("RicksMLC_MapDecorators")
+
+RicksMLC_MapDecoratorsInstance = nil
+
+function RicksMLC_MapDecorators.Instance()
+    if not RicksMLC_MapDecoratorsInstance then
+        RicksMLC_MapDecoratorsInstance = RicksMLC_MapDecorators:new()
+    end
+    return RicksMLC_MapDecoratorsInstance
+end
+
+function RicksMLC_MapDecorators:new()
+	local o = {}
+	setmetatable(o, self)
+	self.__index = self
+
+    o.decorators = {}
+
+    return o
+end
+
+function RicksMLC_MapDecorators:Register(name, fn)
+    self.decorators[name] = fn
+end
+
+function RicksMLC_MapDecorators:Get(name)
+    return self.decorators[name]
+end
+
+-------------------------------------------
 -- SetReadingMap is the external static function called by the override for the Read Map menu item.
-RicksMLC_MapIDLookup = ISBaseObject:derive("RicksMLC_MapIDLookup");
+RicksMLC_MapIDLookup = ISBaseObject:derive("RicksMLC_MapIDLookup")
 
 RicksMLC_MapIDLookupInstance = nil
 
@@ -119,7 +154,10 @@ function RicksMLC_TreasureHuntMgr:UpdateTreasureHuntDefns(treasureHuntDefn)
     self:SaveModData()
 end
 
--- Treasure Hunt Definitions: { Name = string, Barricades = {min, max} | n, Zombies = {min, max} | n, Treasures = {string, string...}, Town = nil | string) }
+-- Treasure Hunt Definitions: { Name = string, Barricades = {min, max} | n, Zombies = {min, max} | n, Treasures = {string, string...}, Town = nil | string), Decorators = nil | {[n] = DecoratorName} }
+-- Decorators: The DecoratorName is the name given to the registered decorator.  
+--             The index to the decorator corresponds with the treasure item so a unique decorator can be assigned
+--             to each treaure.
 function RicksMLC_TreasureHuntMgr:AddTreasureHunt(treasureHuntDefn, isFromModData)
     if self:IsDuplicate(treasureHuntDefn, self.TreasureHunts) then return end
 
