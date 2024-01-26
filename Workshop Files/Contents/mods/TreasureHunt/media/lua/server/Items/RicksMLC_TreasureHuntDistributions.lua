@@ -24,92 +24,73 @@ function RicksMLC_TreasureHuntDistributions:new()
     return o
 end
 
-function RicksMLC_TreasureHuntDistributions:IsInDistribution(itemType)
+function RicksMLC_TreasureHuntDistributions:IsInDistribution(distKey)
     local dist = SuburbsDistributions
-    local tmpTable = dist["RicksMLC_" .. itemType]
+    local tmpTable = dist[distKey]
     return tmpTable ~= nil
 end
 
-function RicksMLC_TreasureHuntDistributions:AddTreasureToDistribution(itemType)
+function RicksMLC_TreasureHuntDistributions:GenerateProceduralDistribuions(proceduralDefns, treasureDist, distKey)
+    local procDefn = {procedural = true,  procList = {}}
+    --RicksMLC_THSharedUtils.DumpArgs(proceduralDefns, 0, "procDefn init")
+    for _, v in ipairs(proceduralDefns) do
+        for _, proc in ipairs(v.Procs) do
+            table.insert(procDefn.procList, 1, proc) --TODO: weightChance is optional
+        end
+        for _, v in ipairs(v.Containers) do
+            treasureDist[distKey][v] = procDefn
+        end
+        procDefn = {procedural = true,  procList = {}}
+    end
+end
+
+function RicksMLC_TreasureHuntDistributions:AddTreasureToDistribution(treasure, distKey)
     DebugLog.log(DebugType.Mod, "AddTreasureToDist(itemType) Start")
-    if self:IsInDistribution(itemType) then
-        DebugLog.log(DebugType.Mod, "AddTreasureToDist(itemType) Item '" .. itemType .. "' is already in a distribution. End")
+    local itemType = treasure
+    local proceduralDefns = nil
+    if type(treasure) == 'table' then
+        -- Fine-grained treasure item defn
+        itemType = treasure.Item
+        proceduralDefns = treasure.ProceduralDefns
+    end
+    if distKey == nil then
+        distKey = "RicksMLC_" .. itemType
+    end
+    if self:IsInDistribution(distKey) then
+        DebugLog.log(DebugType.Mod, "AddTreasureToDist(itemType) distKey '" .. distKey .. "' Item '" .. itemType .. "' is already in a distribution. End")
         return
     end
-
     local treasureDist = {}
-    local distKey = "RicksMLC_" .. itemType
     treasureDist[distKey] = { Bag_DuffelBagTINT = {rolls = 1, items = {itemType, 200000}}, junk = {rolls = 1, items = {}} }
+    if proceduralDefns then
+        self:GenerateProceduralDistribuions(proceduralDefns, treasureDist, distKey)
+    end
     MergeDistributionRecursive(SuburbsDistributions, treasureDist)
-    RicksMLC_THSharedUtils.DumpArgs(treasureDist, 0, "RicksMLC_Scratch_Distributions AddTreasureToDist treasureDist")
+    --RicksMLC_THSharedUtils.DumpArgs(treasureDist, 0, "RicksMLC_TreasureHuntDistributions AddTreasureToDistribution treasureDist")
     local dist = SuburbsDistributions
     local tmpTable = dist[distKey]
     if tmpTable then
         RicksMLC_THSharedUtils.DumpArgs(tmpTable, 0, "AddTreasureToDist SuburbsDistributions '" .. distKey .. "'")
     end
-
     DebugLog.log(DebugType.Mod, "AddTreasureToDist(itemType) End")
 end
 
-function RicksMLC_TreasureHuntDistributions:AddSingleTreasureToDistribution(itemType)
-    self:AddTreasureToDistribution(itemType)
+function RicksMLC_TreasureHuntDistributions:AddSingleTreasureToDistribution(treasure, distName)
+    self:AddTreasureToDistribution(treasure, distName)
     ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
 end
 
-function RicksMLC_TreasureHuntDistributions:AddTreasureListToDistribution(treasureList)
+function RicksMLC_TreasureHuntDistributions:AddTreasureListToDistribution(treasureList, distName)
     for i, v in ipairs(treasureList) do
         self:AddTreasureToDistribution(v)
     end
     ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
 end
 
-local function postDistributionMerge()
-    local defaultTreasures = {
-        "BorisBadger",
-        "FluffyfootBunny",
-        "FreddyFox",
-        "FurbertSquirrel",
-        "JacquesBeaver",
-        "MoleyMole",
-        "PancakeHedgehog",
-        "Spiffo"
-    }
-    RicksMLC_TreasureHuntDistributions.Instance():AddTreasureListToDistribution(defaultTreasures)
-    RicksMLC_TreasureHuntDistributions.Instance():AddTreasureToDistribution("ElectronicsMag4")
-end
-
-Events.OnPostDistributionMerge.Add(postDistributionMerge)
-
--- FIXME: Commented Out Code: Remove if the pre distribution event is not needed.
--- local function makeTreasureDist()
---     --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt_Distributions makeTreasureDist() start")
---     local treasureDist = {}
-
---     for i, v in ipairs(RicksMLC_TreasureHuntMgr.Instance().Treasures) do
---         local distKey = "RicksMLC_" .. v
---         treasureDist[distKey] = { Bag_DuffelBagTINT = {rolls = 1, items = {v, 200000}}, junk = {rolls = 1, items = {}} }
---     end
-    
---     --RicksMLC_THSharedUtils.DumpArgs(treasureDist, 0, "RicksMLC_Scratch_Distributions makeTreasureDist() treasureDist")
-
---     table.insert(Distributions, 2, treasureDist)
---     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt_Distributions makeTreasureDist() end")
--- end
-
--- local function preDistributionMerge()
---     -- Always insert at the 2nd entry - the vanilla distributions are always first.
---     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt_Distributions preDistributionMerge()")
-
---     makeTreasureDist()
--- end
-
-
 -- local function TestAddLoot(key)
 --     if key == Keyboard.KEY_F10 then
 --         AddTreasureToDist("Needle")
 --     end
 -- end
-
--- Events.OnPreDistributionMerge.Add(preDistributionMerge)
 
 -- Events.OnKeyPressed.Add(TestAddLoot)

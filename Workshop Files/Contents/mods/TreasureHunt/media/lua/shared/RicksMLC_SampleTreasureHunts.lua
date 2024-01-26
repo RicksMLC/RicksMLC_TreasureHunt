@@ -9,9 +9,12 @@
 --      Barricades = {min, max} | n,         -- % Barricades. Range for random between min and max, or a single number. 0 => no barricades.
 --      Zombies = {min, max} | n,            -- % chance of zombie per tile in the zombie spawn formula. A non-zero value will have at least one zombie per room.
 --                                              Set to nil to have no zombies in the building.
---      Treasures = {string [, string...] }  -- TreasureList.  Comma separated list of items.  Each item will have its own map in sequence.
+--      Treasures = {string | {table} [, string | table...] }  -- TreasureList.  Comma separated list of items.  Each entry will have its own map in sequence.
 --      Decorators = {string}                -- Decorator functions to add annotations to the map.  If not supplied the RicksMLC_TreasureHuntStash.DefaultDecorator is called.
 --    }
+--
+-- The Treasures= {} can be a simple list of strings or fine-grained entries.
+-- A fine-grained entry is a more detailed definition of a treasure map which consists of an Item=itemType and 
 --
 -- Decorators: The map generator calls a callback function which the RicksMLC_TreasureHunt:AddStashMap will call
 -- to decorate the map with custom annotations.
@@ -30,7 +33,7 @@
 -- Note: More custom symbols can be added to the map by calling:
 --          MapSymbolDefinitions.getInstance():addTexture("ArrowWest", "media/ui/LootableMaps/map_arrowwest.png")
 --
---
+---------------------------------------
 --  TODO: Implement the updated format:
 --  {
 --      {Item="BorisBadger", Decorator=myDecoratorFunction},
@@ -89,13 +92,39 @@ function RicksMLC_SampleTreasureHunts.FluffyFootDecorator(stashMap, x, y)
     stashMap:addStamp(nil, "I just love FluffyFoot! - maybe there is one here?", x + 20, y, purple.r, purple.g, purple.b)
 end
 
+function RicksMLC_SampleTreasureHunts.MetalworkKitDecorator(stashMap, x, y)
+    stashMap:addStamp("Target", nil, x, y, 0, 0, 0.75)
+    stashMap:addStamp(nil, "You'll need this", x + 20, y, 0, 0, 0.75)
+end
+
+function RicksMLC_SampleTreasureHunts.MetalworkKitDecorator2(stashMap, x, y)
+    stashMap:addStamp("Target", nil, x, y, 0, 0, 0.75)
+    stashMap:addStamp(nil, "Oops... you will need this too", x + 20, y, 0, 0, 0.75)
+end
+
+
 local function RegisterMapDecorators()
     RicksMLC_MapDecorators.Instance():Register("FluffyFootDecorator", RicksMLC_SampleTreasureHunts.FluffyFootDecorator)
     RicksMLC_MapDecorators.Instance():Register("SampleGenMagDecorator", RicksMLC_SampleTreasureHunts.GenMagDecorator)
+    RicksMLC_MapDecorators.Instance():Register("MetalworkKitDecorator", RicksMLC_SampleTreasureHunts.MetalworkKitDecorator)
+    RicksMLC_MapDecorators.Instance():Register("MetalworkKitDecorator2", RicksMLC_SampleTreasureHunts.MetalworkKitDecorator2)
 end
 
 ----
--- Treasure Hunt Definitions:
+-- A distribution format (Basic SuburbsDistribution):
+--      containerName = {rolls = n, items = {itemName, nProbability, itemName, nProbability ... }, junk = {rolls = 1, items = {}}}
+--
+-- For a procedural distribution the SuburbsDistribution format is:
+--      containerName = {procedural = true, procList = { name = proceduralName, min=m, max=n, weightChance=o }}
+-- eg:  crate = { procedural = true, procList = { name="CrateAntiqueStove", min=0, max=1, weightChance=5 } }
+-- 
+-- The ProceduralDistribution has the same format as the SuburbsDistribution basic format with a proceduralName instead of a containerName
+--      proceduralName = {rolls = n, items = {itemName, nProbability, itemName, nProbability ... }, junk = {rolls = 1, items = {}}}
+--
+-- eg: CrateAntiqueStove = { rolls = 1, items = { "Mov_AntiqueStove", 100000, }, junk = { rolls = 1, items = {}}}
+----
+
+-- Treasure Hunt Definitions: 
 RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15}, Treasures = {
         "BorisBadger",
@@ -109,6 +138,28 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
         Decorators = {[2] = "FluffyFootDecorator"}
     },
     {Name = "Maybe Helpful", Town = "SampleEkronTown", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}, Decorators = {[1] = "SampleGenMagDecorator"}}, -- GenMag
+    {Name = "Metalworker Kit", 
+     Barricades = 50,
+     Town = "Rosewood",
+     Treasures = {
+        {Item = "BlowTorch", 
+         Decorator = "MetalworkKitDecorator",
+         ProceduralDefns = {
+                {
+                    Containers = {"crate", "metal_shelves", "shelves", "wardrobe"}, 
+                    Procs = {{name="CrateMetalwork", min=1, max=9, weightChance=100}, {name = "BurglarTools", min=1, max=3, weightChance=100}}
+                },
+                {
+                    Containers = {"fridge"}, -- FIXME: Freezer doesn't populate?
+                    Procs = {{name="ArmyStorageGuns", min=1, max=2, weightChance=100},
+                             {name="KitchenCannedFood", min=1, max=7, weightChance=100},
+                             {name="KitchenDryFood", min=1, max=2, weightChance=100}}
+                }
+            },
+        },
+        {Item = "WeldingMask", Decorator = "MetalworkKitDecorator2"}
+     }
+    }
 }
 
 -- Optional example to add a custom Town to the list of possible towns.

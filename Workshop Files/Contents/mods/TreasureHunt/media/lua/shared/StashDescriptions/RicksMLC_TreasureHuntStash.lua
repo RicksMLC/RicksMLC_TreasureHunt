@@ -25,6 +25,7 @@ function RicksMLC_TreasureHuntStash.DefaultDecorator(stashMap, x, y)
     stashMap:addStamp(nil, "Stash_RicksMLC_TreasureMap_Text1", x + 20, y - 10, 1, 0, 0)
 end
 
+-- spawnTable is the name of the distribution in the SuburbsDistributions
 function RicksMLC_TreasureHuntStash.AddStash(newStashName, x, y, barricades, zombies, mapItemName, spawnTable)
     local stashMap = StashUtil.newStash(newStashName, "Map", mapItemName, "Stash_AnnotedMap")
     stashMap.buildingX = x

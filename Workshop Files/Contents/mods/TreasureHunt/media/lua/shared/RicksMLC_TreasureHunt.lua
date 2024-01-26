@@ -3,10 +3,10 @@
 
 -- Each treasure hunt contains one or more treasure maps.  These treasure maps are produced and read in sequence.
 -- At any one time there is only one "current" treasure map visible to the player via the Annotated Maps vanilla feature.
--- A treasure map consists of the TreasureData (see CreateTreasureData()) which is the raw data needed
--- to construct a working Stash and Annotated Map.  The TreasureData is generated from the treasure map definition
+-- A treasure map consists of the treasureModData (see CreateTreasureModData()) which is the raw data needed
+-- to construct a working Stash and Annotated Map.  The treasureModData is generated from the treasure map definition
 -- given by the TreasureHuntMgr.  Some of the attributes are random (such as the selection of the town and building).
--- Therefore, once a TreasureData is intitialised it is stored in the ModData so on subsequent runs of PZ the TreasureData
+-- Therefore, once a treasureModData is intitialised it is stored in the ModData so on subsequent runs of PZ the treasureModData
 -- does not change.
 --
 -- AddStashMap: Stash Maps (which is what Annotated Maps are interinally) must be loaded into the StashSystem at runtime
@@ -14,14 +14,14 @@
 --
 -- Reading an Annotated Map works by using the "Map=stashMapName" item and running the function stored in LootMaps.Init[stashMapName]
 -- Normally this would be a hard-coded definition of the map boundaries so the UI can display that co-ordinate bounds of the map.  In order
--- to make a general-purpose function which uses the TreasureData to look up the required details for the map it is
+-- to make a general-purpose function which uses the treasureModData to look up the required details for the map it is
 -- assigned as LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn where stashMapName = GenerateMapName(self.ModData.CurrentMapNum)
 -- The MapDefnFn looks up the currently read map and loads the
 -- bounds for the map from the lookup.
 --
 -- Spawning the stash map:  The map is spawned with the followng sequence:
 --     local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
---     local treasureItem = InventoryItemFactory.CreateItem("Base." .. treasureData.Treasure)
+--     local treasureItem = InventoryItemFactory.CreateItem("Base." .. treasureModData.Treasure)
 --     mapItem:setMapID(self:GenerateMapName(self.ModData.CurrentMapNum)) -- Change the ID of the map to the unique ID which matches the LootMap.Init[stashMapName]
 --     StashSystem.doStashItem(stash, mapItem)
 --     mapItem:setName(mapItem:getDisplayName() .. ": " .. treasureItem:getDisplayName())
@@ -37,6 +37,10 @@
 --  set the CurrentMapNum to that item, and the Mgr will activate the OnHitZombie() event handler.  When a zombie is hit the Mgr will
 --  pass it onto all of the TreasureHunts, and the CurrentMapNum ~= LastSpawnedMapNum it will add the CurrentMapNum to the zombie, and 
 --  update the LastSpawnedMapNum to the CurrentMapNum.
+
+local function isTable(o)
+    return (type(o) == 'table')
+end
 
 require "StashDescriptions/RicksMLC_TreasureHuntStash"
 require "RicksMLC_MapUtils"
@@ -64,6 +68,9 @@ function RicksMLC_TreasureHunt:new(treasureHuntDefn, huntId)
     -- Treasure lookup
     o.TreasureLookup = {}
     for i, v in ipairs(o.Treasures) do
+        if isTable(v) then
+            v = v.Item
+        end
         o.TreasureLookup[v] = i
     end
 
@@ -92,23 +99,23 @@ function RicksMLC_TreasureHunt:GetMapPath(mapNum)
     if not self.ModData.Maps then
         return
     end
-    local treasureData = self.ModData.Maps[mapNum]
-    if not treasureData then return nil end
-    return treasureData.MapPath
+    local treasureModData = self.ModData.Maps[mapNum]
+    if not treasureModData then return nil end
+    return treasureModData.MapPath
 end
 
 function RicksMLC_TreasureHunt:setBoundsInSquares(mapAPI, mapNum)
     if not self.ModData.Maps then
         return
     end
-    local treasureData = self.ModData.Maps[self.ModData.CurrentMapNum]
+    local treasureModData = self.ModData.Maps[self.ModData.CurrentMapNum]
     if mapNum then
-        treasureData = self.ModData.Maps[mapNum]
+        treasureModData = self.ModData.Maps[mapNum]
     end
     local dx = 600
     local dy = 400
-    if treasureData then
-        mapAPI:setBoundsInSquares(treasureData.buildingCentreX - dx, treasureData.buildingCentreY - dy, treasureData.buildingCentreX + dx, treasureData.buildingCentreY + dy)
+    if treasureModData then
+        mapAPI:setBoundsInSquares(treasureModData.buildingCentreX - dx, treasureModData.buildingCentreY - dy, treasureModData.buildingCentreX + dx, treasureModData.buildingCentreY + dy)
     end
 end
 
@@ -129,18 +136,18 @@ local function calcBuildingCentre(buildingDef)
             y = buildingDef:getY() + PZMath.roundToInt(buildingDef:getH() / 2)}
 end
 
-function RicksMLC_TreasureHunt:IsSameBuilding(treasureData, buildingDef)
+function RicksMLC_TreasureHunt:IsSameBuilding(treasureModData, buildingDef)
     local buildingCentre = calcBuildingCentre(buildingDef)
-    return treasureData.buildingCentreX == buildingCentre.x and treasureData.buildingCentreY == buildingCentre.y
+    return treasureModData.buildingCentreX == buildingCentre.x and treasureModData.buildingCentreY == buildingCentre.y
 end
 
 function RicksMLC_TreasureHunt:IsDuplicateBuilding(nearestBuildingDef)
     local buildingCentre = calcBuildingCentre(nearestBuildingDef)
     --DebugLog.log(DebugType.Mod, "nearestBuildingCentre: x: " .. tostring(buildingCentre.x) .. " y: " .. tostring(buildingCentre.y))
-    for i, treasureData in ipairs(self.ModData.Maps) do
-        --DebugLog.log(DebugType.Mod, "   x: " .. tostring(treasureData.buildingCentreX) .. " y: " .. tostring(treasureDetails.buildingCentreY) )
-        if treasureData.buildingCentreX == buildingCentre.x and treasureData.buildingCentreY == buildingCentre.y then 
-           DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt: isDuplicateBuilding detected. x: " .. tostring(treasureData.buildingCentreX) .. " y: " .. tostring(treasureData.buildingCentreY))
+    for i, treasureModData in ipairs(self.ModData.Maps) do
+        --DebugLog.log(DebugType.Mod, "   x: " .. tostring(treasureModData.buildingCentreX) .. " y: " .. tostring(treasureDetails.buildingCentreY) )
+        if treasureModData.buildingCentreX == buildingCentre.x and treasureModData.buildingCentreY == buildingCentre.y then 
+           DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt: isDuplicateBuilding detected. x: " .. tostring(treasureModData.buildingCentreX) .. " y: " .. tostring(treasureModData.buildingCentreY))
            return true
         end
     end
@@ -174,68 +181,77 @@ function RicksMLC_TreasureHunt:ChooseRandomBuilding(mapBounds)
     return nearestBuildingDef
 end
 
-function RicksMLC_TreasureHunt:CreateTreasureData(treasure, mapBounds)
-    local treasureData = {}
-    treasureData.Building = self:ChooseRandomBuilding(mapBounds)
-    if not treasureData.Building then 
-        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CreateTreasureData ERROR: No building found for mapBounds " .. tostring(mapBounds))
+function RicksMLC_TreasureHunt:CreateTreasureModData(treasure, mapBounds)
+    local treasureModData = {}
+    treasureModData.Building = self:ChooseRandomBuilding(mapBounds)
+    if not treasureModData.Building then 
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.CreateTreasureModData ERROR: No building found for mapBounds " .. tostring(mapBounds))
         return nil
     end
 
-    local buildingCentre = calcBuildingCentre(treasureData.Building)
-    treasureData.buildingCentreX = buildingCentre.x
-    treasureData.buildingCentreY = buildingCentre.y
-    treasureData.MapPath = mapBounds.MapPath
-    treasureData.Treasure = treasure
+    local buildingCentre = calcBuildingCentre(treasureModData.Building)
+    treasureModData.buildingCentreX = buildingCentre.x
+    treasureModData.buildingCentreY = buildingCentre.y
+    treasureModData.MapPath = mapBounds.MapPath
+    treasureModData.Treasure = treasure
     if type(self.Zombies) == "table" then
-        treasureData.zombies = ZombRand(self.Zombies[1], self.Zombies[2])
+        treasureModData.zombies = ZombRand(self.Zombies[1], self.Zombies[2])
     else
-        treasureData.zombies = self.Zombies
+        treasureModData.zombies = self.Zombies
     end
 
-    if RicksMLC_MapUtils.IsNoBarricadeBuilding(treasureData.buildingCentreX, treasureData.buildingCentreY) then
-        treasureData.barricades = 0
+    if RicksMLC_MapUtils.IsNoBarricadeBuilding(treasureModData.buildingCentreX, treasureModData.buildingCentreY) then
+        treasureModData.barricades = 0
     else 
         if type(self.Barricades) == "table" then
-            treasureData.barricades = ZombRand(self.Barricades[1], self.Barricades[2])
+            treasureModData.barricades = ZombRand(self.Barricades[1], self.Barricades[2])
         else
-            treasureData.barricades = self.Barricades
+            treasureModData.barricades = self.Barricades
         end
     end
-    treasureData.Found = false
-    return treasureData
+    treasureModData.Found = false
+    return treasureModData
 end
 
- -- This is the name of the map item 
+ -- This is the name of the map 
 function RicksMLC_TreasureHunt:GenerateMapName(i)
-    return "RicksMLC_TreasureMap_" .. self.Name .. "_" .. tostring(i)
+    return "RicksMLC_TreasureMap_" .. string.gsub(self.Name, " ", "_") .. "_" .. tostring(i)
 end
 
-function RicksMLC_TreasureHunt:AddStashMap(treasureData, i, stashLookup)
+function RicksMLC_TreasureHunt:CallDecorator(stashMap, treasureModData, i)
+    -- Call any Decorator Callback function defined for this treasure item to customise the text and symbols on the map
+    local decoratorName = self.TreasureHuntDefn.Decorators and self.TreasureHuntDefn.Decorators[i]
+    if isTable(self.Treasures[i]) and self.Treasures[i].Decorator then
+        -- The Item decorator overrides the general decorator list for the hunt.
+        decoratorName = self.Treasures[i].Decorator
+    end
+    if decoratorName then
+        local decorator = RicksMLC_MapDecorators.Instance():Get(decoratorName)
+        decorator(stashMap, treasureModData.buildingCentreX, treasureModData.buildingCentreY)
+    else
+        RicksMLC_TreasureHuntStash.DefaultDecorator(stashMap, treasureModData.buildingCentreX, treasureModData.buildingCentreY)
+    end
+end
+
+function RicksMLC_TreasureHunt:AddStashMap(treasureModData, i, stashLookup)
     local stashMapName = self:GenerateMapName(i)
     -- FIXME: Should the StashDescLookup re-populate the lookup each time so new maps are included?
     local stashDesc = RicksMLC_StashDescLookup.Instance():StashLookup(stashMapName)
     if not stashDesc then
-        DebugLog.log(DebugType.Mod, "   Adding stash for " .. treasureData.Treasure)
-        local spawnTable = "RicksMLC_" .. treasureData.Treasure -- This string is the lookup into the SuburbsDisributions table.  See RicksMLC_TreasureHuntDistributions.lua
+        DebugLog.log(DebugType.Mod, "   Adding stash for " .. stashMapName)
+        local spawnTable = stashMapName -- This string is the lookup into the SuburbsDisributions table.  See RicksMLC_TreasureHuntDistributions.lua
         local newStashMap = RicksMLC_TreasureHuntStash.AddStash(
             stashMapName,
-            treasureData.buildingCentreX,
-            treasureData.buildingCentreY, 
-            treasureData.barricades,
-            treasureData.zombies,
+            treasureModData.buildingCentreX,
+            treasureModData.buildingCentreY, 
+            treasureModData.barricades,
+            treasureModData.zombies,
             "Base." .. stashMapName,
             spawnTable)
 
-        -- Call any Decorator Callback function defined for this treasure item to customise the text and symbols on the map
-        if self.TreasureHuntDefn.Decorators and self.TreasureHuntDefn.Decorators[i] then
-            local decorator = RicksMLC_MapDecorators.Instance():Get(self.TreasureHuntDefn.Decorators[i])
-            decorator(newStashMap, treasureData.buildingCentreX, treasureData.buildingCentreY)
-        else
-            RicksMLC_TreasureHuntStash.DefaultDecorator(newStashMap, treasureData.buildingCentreX, treasureData.buildingCentreY)
-        end
+        self:CallDecorator(newStashMap, treasureModData, i)
     else
-        DebugLog.log(DebugType.Mod, "  Found existing stash for " .. treasureData.Treasure)
+        DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
         RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
     end
     LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
@@ -248,9 +264,9 @@ function RicksMLC_TreasureHunt:AddStashMaps()
     for i, stashDesc in ipairs(StashDescriptions) do
         stashLookup[stashDesc.name] = stashDesc
     end
-    for i, treasureData in ipairs(self.ModData.Maps) do
+    for i, treasureModData in ipairs(self.ModData.Maps) do
         -- Check if the stash already exists
-        self:AddStashMap(treasureData, i, stashLookup)
+        self:AddStashMap(treasureModData, i, stashLookup)
     end
 end
 
@@ -262,8 +278,8 @@ function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown, optio
             -- The ModData will not store the BuildingDef so populate it using the building co-ords
             self.ModData.Maps[i].Building = self:getNearestBuildingDef(self.ModData.Maps[i].buildingCentreX, self.ModData.Maps[i].buildingCentreY)
         end
-        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GenerateTreasure() treasure: " .. treasure .. " " .. self.ModData.Maps[i].Town.Town)
-        RicksMLC_THSharedUtils.DumpArgs(self.ModData.Maps[i], 0, "Existing treasureData")
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GenerateTreasure() treasure: " .. ((isTable(treasure) and treasure.Item) or treasure) .. " " .. self.ModData.Maps[i].Town.Town)
+        RicksMLC_THSharedUtils.DumpArgs(self.ModData.Maps[i], 0, "Existing treasureModData")
     else
         local town = nil
         if optionalTown then
@@ -276,18 +292,22 @@ function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown, optio
             town = RicksMLC_MapUtils.GetRandomTown()
         end
         local mapBounds = RicksMLC_MapUtils.GetMapExtents(town.Town, town.MapNum)
-        self.ModData.Maps[i] = self:CreateTreasureData(treasure, mapBounds)
+        self.ModData.Maps[i] = self:CreateTreasureModData(treasure, mapBounds)
         if not self.ModData.Maps[i] then return end -- If no building could be found abort.
         self.ModData.Maps[i].Town = town
         self:SaveModData()
-        --DebugLog.log(DebugType.Mod, "    New treasure: "  .. treasure .. " " .. self.ModData.Maps[i].Town.Town)
+        DebugLog.log(DebugType.Mod, "    New treasure: "  .. ((isTable(treasure) and treasure.Item) or treasure) .. " " .. self.ModData.Maps[i].Town.Town)
     end
 end
 
 function RicksMLC_TreasureHunt:GeneratePastTreasures()
     -- Assemble the treasure data for all treasures maps that have been made.
-    for i, treasureData in ipairs(self.ModData.Maps) do
-        self:GenerateTreasure(self.Treasures[i], i, treasureData.Town.Town, treasureData.Town.MapNum)
+    for i, treasureModData in ipairs(self.ModData.Maps) do
+        self:GenerateTreasure(self.Treasures[i], i, treasureModData.Town.Town, treasureModData.Town.MapNum)
+        -- Ensure the stash distrubutions are included before generating the stashMaps, otherwise on restart the stash buildings will be empty.
+        if not RicksMLC_TreasureHuntDistributions.Instance():IsInDistribution(self:GenerateMapName(i)) then
+            RicksMLC_TreasureHuntDistributions.Instance():AddSingleTreasureToDistribution(self.Treasures[i], self:GenerateMapName(i))
+        end
     end
 end
 
@@ -311,12 +331,25 @@ function RicksMLC_TreasureHunt:SaveModData()
     getGameTime():getModData()["RicksMLC_TreasureHunt"][self.Name] = self.ModData
 end
 
+-- treasure could be a single string: simple case
+-- or a table, which means the treasure is a fine-grained treasure definition.
 function RicksMLC_TreasureHunt:AddNewTreasureToHunt(treasure, townName)
     local i = #self.ModData.Maps + 1
+    if isTable(treasure) then
+        -- This is a fine-grained treasure item definition
+        if treasure.Town then
+            -- Override the town
+            townName = treasure.Town
+        end
+    end
     self:GenerateTreasure(treasure, i, townName) -- FIXME: Add MapNum when it is part of the TreasureHuntMgr manual treasureHuntDefn
-    if not RicksMLC_TreasureHuntDistributions.Instance():IsInDistribution(treasure) then
-        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddNewTreasureToHunt() Adding item '" .. treasure .. "' to distribution")
-        RicksMLC_TreasureHuntDistributions.Instance():AddSingleTreasureToDistribution(treasure)
+    -- The self.ModData.Maps[i] now contains the treasure data for the new map or null if aborted
+    if not self.ModData.Maps[i] then
+        DebugLog.log(DebugType.Mod, "ERROR: RicksMLC_TreasureHunt:AddNewTreasureToHunt() Unable to generate treasure map.")
+        return
+    end
+    if not RicksMLC_TreasureHuntDistributions.Instance():IsInDistribution(self:GenerateMapName(i)) then
+        RicksMLC_TreasureHuntDistributions.Instance():AddSingleTreasureToDistribution(treasure, self:GenerateMapName(i))
     end
     self:AddStashMap(self.ModData.Maps[i], i)
 end
@@ -371,7 +404,7 @@ function RicksMLC_TreasureHunt:GenerateNextMapItem()
         return
     end
 
-    local treasureData = self.ModData.Maps[self.ModData.CurrentMapNum]
+    local treasureModData = self.ModData.Maps[self.ModData.CurrentMapNum]
     local stash = StashSystem.getStash(self:GenerateMapName(self.ModData.CurrentMapNum))
     if not stash then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateNextMapItem() Error: no stash for '" .. self:GenerateMapName(self.ModData.CurrentMapNum) .. "'" )
@@ -386,8 +419,8 @@ function RicksMLC_TreasureHunt:GenerateNextMapItem()
 end
 
 function RicksMLC_TreasureHunt:IsBuildingVisited()
-    local treasureData = self.ModData.Maps[self.ModData.CurrentMapNum]
-    local buildingDef = treasureData.Building
+    local treasureModData = self.ModData.Maps[self.ModData.CurrentMapNum]
+    local buildingDef = treasureModData.Building
     if not buildingDef then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:IsBuildingVisited() No Building def assigned")
     end
@@ -414,7 +447,7 @@ function RicksMLC_TreasureHunt:Dump()
         local closestXY = Vector2f:new(1000, 1000)
         local nearestBuildingDef = AmbientStreamManager.instance:getNearestBuilding(map.buildingCentreX,  map.buildingCentreY, closestXY)
         if nearestBuildingDef then
-            RicksMLC_StashUtils.Dump(nearestBuildingDef, map.Treasure, map.buildingCentreX,  map.buildingCentreY)
+            RicksMLC_StashUtils.Dump(nearestBuildingDef, ((isTable(treasureModData.Treasure) and Treasure.Item) or treasure), map.buildingCentreX,  map.buildingCentreY)
         end
     end
 end
@@ -465,14 +498,14 @@ function RicksMLC_TreasureHunt:CheckIfNewMapNeeded()
         self.ModData.CurrentMapNum = 1
         self:SaveModData()
     else
-        local treasureData = self.ModData.Maps[self.ModData.CurrentMapNum]
+        local treasureModData = self.ModData.Maps[self.ModData.CurrentMapNum]
         local itemContainer = getPlayer():getInventory()
-        local itemList = itemContainer:getAllEvalArgRecurse(matchAnyTreasureClosure, self) --treasureData.Treasure)
+        local itemList = itemContainer:getAllEvalArgRecurse(matchAnyTreasureClosure, self) --treasureModData.Treasure)
         if not itemList:isEmpty() then
             for i = 0, itemList:size()-1 do 
                 local item = itemList:get(i)
                 local currentBuildingDef = getPlayer():getCurrentBuildingDef()
-                if currentBuildingDef and treasureData and self:IsSameBuilding(treasureData, currentBuildingDef) then
+                if currentBuildingDef and treasureModData and self:IsSameBuilding(treasureModData, currentBuildingDef) then
                     if not item:getModData()["RicksMLC_Treasure"] then 
                         -- This is the first time the item has been seen and this is the correct place
                         self:RecordFoundTreasure(item)

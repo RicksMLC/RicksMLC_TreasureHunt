@@ -6,7 +6,7 @@ Features:
         [+] Determine if a treasure hunt item is found and the next map needs generating
         [+] Spawns a treasure map when a zombie is hit.
         [+] Each Treasure Map is generated when needed (ie: when a zombie is hit)
-        [ ] Allow each treasure in the list to have an optional town/co-ords for its position, instead of the one Town.
+        [-] Allow each treasure in the list to have an optional town/co-ords for its position, instead of the one Town. (See Update #2)
         [ ] Allow a predicate for building selection so the map maker can set any criteria for a building (size, type, name, location etc...)
     [+] Treasure Hunt Mgr
         [+] Init populates default treasure hunts
@@ -18,15 +18,25 @@ Features:
     [-] Tresure Hunt Distributions
         [+] Add a new distribution after the vanilla post-distributions event has occurred.  This makes on-the-fly treasure maps possible
             [ ] Needs investiation to see if calling the ItemPickerJava.Parse() in RicksMLC_TreasureHuntDistributions is correct.
-        [ ] Multiple items in a single treasure hunt map  - Phase 3?
-    [ ] Add callback decorator function to apply extra map annotations on map definition - see RicksMLC_SampleTreasureHunts.lua
-    [ ] Investigate and add more addContainer() calls to add more things like survivor loot to the stashMap. see RicksMLC_SampleTreasureHunts.lua
-    [ ] Can map annotations be added after definition? - Not really.  See Java Stash.load()
+        [-] Multiple items in a single treasure hunt map  - Phase 3? (Update #2)
+    [+] Add callback decorator function to apply extra map annotations on map definition - see RicksMLC_SampleTreasureHunts.lua (Update #1)
+    [-] Investigate and add more addContainer() calls to add more things like survivor loot to the stashMap. see RicksMLC_SampleTreasureHunts.lua (Update #2)
+    [x] Can map annotations be added after definition? - Not really.  See Java Stash.load()
     [ ] Return error code if duplicate treasure hunt name detected
 
 Future Features:
     [ ] Multiplayer:  This is bigger than this one line item would suggest o.O
     [ ] Spawn a TreasureMap as part of the loot table, instead of on a zombie?
+
+Update #1:
+    [+] Custom annotations
+
+Update #2:
+    [-] Additional loot definition
+    [ ] Fine-grained treasure item map specification
+        [ ] location
+        [ ] container
+    
 
 Test Plan:
     [+] Sandbox option for loading Samples
