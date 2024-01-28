@@ -30,12 +30,12 @@ function RicksMLC_TreasureHuntDistributions:IsInDistribution(distKey)
     return tmpTable ~= nil
 end
 
-function RicksMLC_TreasureHuntDistributions:GenerateProceduralDistribuions(proceduralDefns, treasureDist, distKey)
+function RicksMLC_TreasureHuntDistributions:GenerateProceduralDistRefs(proceduralDefns, treasureDist, distKey)
     local procDefn = {procedural = true,  procList = {}}
     --RicksMLC_THSharedUtils.DumpArgs(proceduralDefns, 0, "procDefn init")
     for _, v in ipairs(proceduralDefns) do
         for _, proc in ipairs(v.Procs) do
-            table.insert(procDefn.procList, 1, proc) --TODO: weightChance is optional
+            table.insert(procDefn.procList, 1, proc)
         end
         for _, v in ipairs(v.Containers) do
             treasureDist[distKey][v] = procDefn
@@ -44,26 +44,48 @@ function RicksMLC_TreasureHuntDistributions:GenerateProceduralDistribuions(proce
     end
 end
 
+function RicksMLC_TreasureHuntDistributions:GenerateSuburbsDistrubutions(suburbsDefns, treasureDist, distKey)
+    for k, v in pairs(suburbsDefns) do
+        treasureDist[distKey][k] = v
+    end
+end
+
+function RicksMLC_TreasureHuntDistributions:GenerateProceduralDistDefns(proceduralDistDefns)
+    for k, v in pairs(proceduralDistDefns) do
+        ProceduralDistributions.list[k] = v
+    end
+end
+
 function RicksMLC_TreasureHuntDistributions:AddTreasureToDistribution(treasure, distKey)
-    DebugLog.log(DebugType.Mod, "AddTreasureToDist(itemType) Start")
+    DebugLog.log(DebugType.Mod, "AddTreasureToDistribution() Start")
     local itemType = treasure
+    local suburbsDefns = nil
+    local proceduralDistDefns = nil
     local proceduralDefns = nil
     if type(treasure) == 'table' then
         -- Fine-grained treasure item defn
         itemType = treasure.Item
+        suburbsDefns = treasure.SuburbsDisributionsDefns
+        proceduralDistDefns = treasure.ProceduralDistributionDefns
         proceduralDefns = treasure.ProceduralDefns
     end
     if distKey == nil then
         distKey = "RicksMLC_" .. itemType
     end
     if self:IsInDistribution(distKey) then
-        DebugLog.log(DebugType.Mod, "AddTreasureToDist(itemType) distKey '" .. distKey .. "' Item '" .. itemType .. "' is already in a distribution. End")
+        DebugLog.log(DebugType.Mod, "AddTreasureToDistribution(itemType) distKey '" .. distKey .. "' Item '" .. itemType .. "' is already in a distribution. End")
         return
     end
-    local treasureDist = {}
-    treasureDist[distKey] = { Bag_DuffelBagTINT = {rolls = 1, items = {itemType, 200000}}, junk = {rolls = 1, items = {}} }
+    local treasureDist = {} -- This is merged into the SuburbsDistributions for the stashMap to reference as distKey
+    treasureDist[distKey] = { Bag_DuffelBagTINT = {rolls = 1, items = {itemType, 200000}, junk = {rolls = 1, items = {}} }}
+    if suburbsDefns then
+        self:GenerateSuburbsDistrubutions(suburbsDefns, treasureDist, distKey)
+    end
+    if proceduralDistDefns then
+        self:GenerateProceduralDistDefns(proceduralDistDefns)
+    end
     if proceduralDefns then
-        self:GenerateProceduralDistribuions(proceduralDefns, treasureDist, distKey)
+        self:GenerateProceduralDistRefs(proceduralDefns, treasureDist, distKey)
     end
     MergeDistributionRecursive(SuburbsDistributions, treasureDist)
     --RicksMLC_THSharedUtils.DumpArgs(treasureDist, 0, "RicksMLC_TreasureHuntDistributions AddTreasureToDistribution treasureDist")

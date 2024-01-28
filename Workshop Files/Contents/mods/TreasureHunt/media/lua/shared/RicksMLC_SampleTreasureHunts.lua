@@ -95,6 +95,7 @@ end
 function RicksMLC_SampleTreasureHunts.MetalworkKitDecorator(stashMap, x, y)
     stashMap:addStamp("Target", nil, x, y, 0, 0, 0.75)
     stashMap:addStamp(nil, "You'll need this", x + 20, y, 0, 0, 0.75)
+    stashMap:addContainer(nil,nil,"EmptySandbag",nil, nil, nil, nil)
 end
 
 function RicksMLC_SampleTreasureHunts.MetalworkKitDecorator2(stashMap, x, y)
@@ -125,6 +126,9 @@ end
 ----
 
 -- Treasure Hunt Definitions: 
+-- The SuburbsDistributionsDefns are the same format as the vanilla SuburbsDistributions and the ProceduralDistributionsDefns are
+-- the same format as the ProceduralDistributions.
+-- The ProceduralDefns is a hybrid format which makes the Procs for each of the defined Containers.
 RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15}, Treasures = {
         "BorisBadger",
@@ -139,25 +143,33 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
     },
     {Name = "Maybe Helpful", Town = "SampleEkronTown", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}, Decorators = {[1] = "SampleGenMagDecorator"}}, -- GenMag
     {Name = "Metalworker Kit", 
-     Barricades = 50,
+     Barricades = 60,
      Town = "Rosewood",
      Treasures = {
         {Item = "BlowTorch", 
          Decorator = "MetalworkKitDecorator",
+         SuburbsDisributionsDefns = {
+                EmptySandbag = {rolls = 2, items = {"Acorn", 200000}, junk = {rolls = 1, items = {}}} ,
+                wardrobe = {rolls = 3, items = {"Banjo", 100, "Hat_Fedora_Delmote", 20 }, junk = {rolls = 1, items = {}}}
+            },
+         ProceduralDistributionDefns = {
+                RicksMLC_HandyThings = {rolls = 2, items = {"HandScythe", 200, "Yoghurt", 2000 }, junk = {rolls = 1, items = {}}},
+            },
          ProceduralDefns = {
                 {
-                    Containers = {"crate", "metal_shelves", "shelves", "wardrobe"}, 
-                    Procs = {{name="CrateMetalwork", min=1, max=9, weightChance=100}, {name = "BurglarTools", min=1, max=3, weightChance=100}}
+                    Containers = {"crate", "metal_shelves", "shelves", "filingcabinet", "dresser"}, 
+                    Procs = {{name="CrateMetalwork", min=1, max=9, weightChance=20}, 
+                             {name="RicksMLC_HandyThings", min=1, max=3, weightChance=10}}
                 },
                 {
-                    Containers = {"fridge"}, -- FIXME: Freezer doesn't populate?
-                    Procs = {{name="ArmyStorageGuns", min=1, max=2, weightChance=100},
-                             {name="KitchenCannedFood", min=1, max=7, weightChance=100},
-                             {name="KitchenDryFood", min=1, max=2, weightChance=100}}
+                    Containers = {"fridge"}, -- FIXME: freezer doesn't populate?
+                    Procs = {{name="ArmyStorageGuns", min=1, max=2, weightChance=20},
+                             {name="RicksMLC_HandyThings", min=1, max=7, weightChance=40},
+                             {name="KitchenDryFood", min=1, max=2, weightChance=20}}
                 }
             },
         },
-        {Item = "WeldingMask", Decorator = "MetalworkKitDecorator2"}
+        {Item = "WeldingMask", Decorator = "MetalworkKitDecorator2", ProceduralDefns = {{Containers = {"cabinet"}, Procs = {{name=RicksMLC_HandyThings, min=1, max=1}}}}}
      }
     }
 }
@@ -186,3 +198,4 @@ end
 -- RicksMLC_TreasureHunt events to subscribe to for initialisation and action:
 Events.RicksMLC_TreasureHuntMgr_PreInit.Add(PreInitTreasureHunt)
 Events.RicksMLC_TreasureHuntMgr_InitDone.Add(LoadSampleTreasureHunts)
+
