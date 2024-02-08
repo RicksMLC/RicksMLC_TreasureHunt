@@ -9,7 +9,7 @@
 --      Barricades = {min, max} | n,         -- % Barricades. Range for random between min and max, or a single number. 0 => no barricades.
 --      Zombies = {min, max} | n,            -- % chance of zombie per tile in the zombie spawn formula. A non-zero value will have at least one zombie per room.
 --                                              Set to nil to have no zombies in the building.
---      Treasures = {string | {table} [, string | table...] }  -- TreasureList.  Comma separated list of items.  Each entry will have its own map in sequence.
+--      Treasures = {string | {table} [, string | {table}...] }  -- TreasureList.  Comma separated list of items.  Each entry will have its own map in sequence.
 --      Decorators = {string}                -- Decorator functions to add annotations to the map.  If not supplied the RicksMLC_TreasureHuntStash.DefaultDecorator is called.
 --    }
 --
@@ -71,7 +71,7 @@ function RicksMLC_SampleTreasureHunts.GenMagDecorator(stashMap, stashX, stashY)
     -- If you want to still have the default decorator (circle icon on building and "<- look here") call the default:
     RicksMLC_TreasureHuntStash.DefaultDecorator(stashMap, stashX, stashY)
 
-    -- Default symbols can be found in shared/Definitions/MapSybmolDefinitions.lua
+    -- Default symbols can be found in shared/Definitions/MapSymbolDefinitions.lua
     -- You can add your own .png textures to make the map really custom with your own symbols - see AddCustomTextures()
     stashMap:addStamp("Plonkies", nil, stashX - 100, stashY - 100, 0.75, 0.75, 0.75) -- symbol,text,mapX,mapY,r,g,b
     -- Add your own custom annotations.
@@ -147,6 +147,7 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
      Town = "Rosewood",
      Treasures = {
         {Item = "BlowTorch", 
+         Town = "Westpoint",
          Decorator = "MetalworkKitDecorator",
          SuburbsDisributionsDefns = {
                 EmptySandbag = {rolls = 2, items = {"Acorn", 200000}, junk = {rolls = 1, items = {}}} ,
@@ -169,7 +170,9 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
                 }
             },
         },
-        {Item = "WeldingMask", Decorator = "MetalworkKitDecorator2", ProceduralDefns = {{Containers = {"cabinet"}, Procs = {{name=RicksMLC_HandyThings, min=1, max=1}}}}}
+        {Item = "WeldingMask", 
+         Town = {"Louisville", MapNum = 1},
+         Decorator = "MetalworkKitDecorator2", ProceduralDefns = {{Containers = {"cabinet"}, Procs = {{name=RicksMLC_HandyThings, min=1, max=1}}}}}
      }
     }
 }

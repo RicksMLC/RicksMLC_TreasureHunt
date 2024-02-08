@@ -54,6 +54,7 @@ RicksMLC_Commands.TreasureHunt = {}
 
 function RicksMLC_Commands.TreasureHunt.AddTreasureHunt(player, args)
     DebugLog.log(DebugType.Mod, "RicksMLC_Commands.TreasureHunt.AddTreasureHunt()")
+    --RicksMLC_TreasureHuntMgr.Instance():HandleClientOnHitZombie(player, args)
 end
 
 function RicksMLC_TreasureHuntS.OnClientCommand(moduleName, command, player, args)

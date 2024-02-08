@@ -50,7 +50,8 @@ require "ISBaseObject"
 
 LuaEventManager.AddEvent("RicksMLC_TreasureHunt_Finished")
 
-RicksMLC_TreasureHunt = ISBaseObject:derive("RicksMLC_TreasureHunt");
+RicksMLC_TreasureHunt = ISBaseObject:derive("RicksMLC_TreasureHunt")
+print "RicksMLC_TreasureHunt = ISBaseObject:derive() done"
 
 function RicksMLC_TreasureHunt:new(treasureHuntDefn, huntId)
 	local o = {}
@@ -284,8 +285,7 @@ function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown, optio
         local town = nil
         if optionalTown then
             town = {Town = optionalTown, MapNum = optionalMapNum}
-            -- Temporary random fix for LV town until optionalMapNum is passed in
-            if optionalTown == "Louisville" then
+            if optionalTown == "Louisville" and not optionalMapNum then
                 town.MapNum = ZombRand(1, 9)
             end
         else
@@ -335,14 +335,22 @@ end
 -- or a table, which means the treasure is a fine-grained treasure definition.
 function RicksMLC_TreasureHunt:AddNewTreasureToHunt(treasure, townName)
     local i = #self.ModData.Maps + 1
+    local mapNum = nil
     if isTable(treasure) then
         -- This is a fine-grained treasure item definition
         if treasure.Town then
             -- Override the town
-            townName = treasure.Town
+            if isTable(treasure.Town) then
+                townName = treasure.Town.Town
+                if treasure.Town.MapNum then
+                    mapNum = treasure.Town.MapNum
+                end
+            else
+                townName = treasure.Town
+            end
         end
     end
-    self:GenerateTreasure(treasure, i, townName) -- FIXME: Add MapNum when it is part of the TreasureHuntMgr manual treasureHuntDefn
+    self:GenerateTreasure(treasure, i, townName, mapNum)
     -- The self.ModData.Maps[i] now contains the treasure data for the new map or null if aborted
     if not self.ModData.Maps[i] then
         DebugLog.log(DebugType.Mod, "ERROR: RicksMLC_TreasureHunt:AddNewTreasureToHunt() Unable to generate treasure map.")
@@ -427,16 +435,21 @@ function RicksMLC_TreasureHunt:IsBuildingVisited()
 end
 
 function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie)
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddNextMapToZombie()")
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddNextMapToZombie()")
     if not self.ModData.Maps[self.ModData.CurrentMapNum] or self.ModData.Maps[self.ModData.CurrentMapNum].Found then
         self:GenerateNextTreasureMap()
     end
     local mapItem = self:GenerateNextMapItem()
-    zombie:addItemToSpawnAtDeath(mapItem)
+    if zombie then
+        -- This may be called in the server, where the zombie is not defined
+        zombie:addItemToSpawnAtDeath(mapItem)
+    end
     -- Check if the building has been visited before now.
     if self:IsBuildingVisited() then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddNextMapToZombie(): WARNING Buiding already visited for map " .. mapItem:getName())
+        mapItem = nil
     end
+    return mapItem
 end
 
 function RicksMLC_TreasureHunt:Dump()
@@ -471,7 +484,8 @@ end
 
 local function matchAnyTreasureClosure(x, obj)
     if x:getModData()["RicksMLC_Treasure"] == "Not a treasure item" then return false end
-    local matchItem = obj.TreasureLookup[x:getType()]
+    --DebugLog.log(DebugType.Mod, "matchAnyTreasureClosure() x: type: '" .. x:getType() .. "', fullType: '" .. x:getFullType() .. "'")
+    local matchItem = obj.TreasureLookup[x:getType()] or obj.TreasureLookup[x:getFullType()]
     if matchItem then
         return true
     end
@@ -489,7 +503,7 @@ function RicksMLC_TreasureHunt:RecordFoundTreasure(item)
     end
 end
 
-function RicksMLC_TreasureHunt:CheckIfNewMapNeeded()
+function RicksMLC_TreasureHunt:CheckIfNewMapNeeded(player)
     if self.ModData.Finished then return {UnassignedItems = {}, NewMapNeeded = false} end
 
     local possibleTreasureItems = {}
@@ -499,12 +513,12 @@ function RicksMLC_TreasureHunt:CheckIfNewMapNeeded()
         self:SaveModData()
     else
         local treasureModData = self.ModData.Maps[self.ModData.CurrentMapNum]
-        local itemContainer = getPlayer():getInventory()
+        local itemContainer = player:getInventory()
         local itemList = itemContainer:getAllEvalArgRecurse(matchAnyTreasureClosure, self) --treasureModData.Treasure)
         if not itemList:isEmpty() then
             for i = 0, itemList:size()-1 do 
                 local item = itemList:get(i)
-                local currentBuildingDef = getPlayer():getCurrentBuildingDef()
+                local currentBuildingDef = player:getCurrentBuildingDef()
                 if currentBuildingDef and treasureModData and self:IsSameBuilding(treasureModData, currentBuildingDef) then
                     if not item:getModData()["RicksMLC_Treasure"] then 
                         -- This is the first time the item has been seen and this is the correct place
@@ -535,6 +549,21 @@ end
 function RicksMLC_TreasureHunt:ResetLastSpawnedMapNum()
     if self.ModData.Maps[self.ModData.CurrentMapNum] and not self.ModData.Finished and not self.ModData.Maps[self.ModData.CurrentMapNum].Found and self.ModData.CurrentMapNum > 0 then
         self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum - 1
+    end
+end
+
+function RicksMLC_TreasureHunt:HandleClientOnHitZombie(player, character)
+    -- Server side handling of a client hitting a zombie - generate the treasure map defn (distribtions etc)
+    if self.ModData.Finished then return false end
+    if self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum then
+
+        local mapItem = self:AddNextMapToZombie(nil)
+        if mapItem then
+            local args = {mapItem = mapItem}
+            sendServerCommand(player, "RicksMLC_TreasureHuntMgr", "MapItemGenerated", args)
+        end
+        self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum
+        self:SaveModData()
     end
 end
 
