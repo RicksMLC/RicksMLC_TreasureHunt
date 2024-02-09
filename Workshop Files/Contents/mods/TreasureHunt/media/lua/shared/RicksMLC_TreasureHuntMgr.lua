@@ -122,10 +122,23 @@ function RicksMLC_TreasureHuntMgr:GetMapPath()
 end
 
 function RicksMLC_TreasureHuntMgr:setBoundsInSquares(mapAPI)
+    local currentMapInfo = self:FindCurrentlyReadTreasureHunt()
+    if currentMapInfo then
+        currentMapInfo.TreasureHunt:setBoundsInSquares(mapAPI, currentMapInfo.MapNum)
+    end
+    -- FIXME Remove:
+    -- local mapLookup = RicksMLC_MapIDLookup.Instance():GetReadingMap()
+    -- if mapLookup then
+    --     self.TreasureHunts[mapLookup.HuntId]:setBoundsInSquares(mapAPI, mapLookup.MapNum)
+    -- end
+end
+
+function RicksMLC_TreasureHuntMgr:FindCurrentlyReadTreasureHunt()
     local mapLookup = RicksMLC_MapIDLookup.Instance():GetReadingMap()
     if mapLookup then
-        self.TreasureHunts[mapLookup.HuntId]:setBoundsInSquares(mapAPI, mapLookup.MapNum)
+        return {TreasureHunt = self.TreasureHunts[mapLookup.HuntId], MapNum = mapLookup.MapNum}
     end
+    return nil
 end
 
 function RicksMLC_TreasureHuntMgr:LoadModData()

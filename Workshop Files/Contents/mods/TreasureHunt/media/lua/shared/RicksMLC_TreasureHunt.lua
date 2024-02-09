@@ -129,7 +129,25 @@ RicksMLC_TreasureHunt.MapDefnFn = function(mapUI)
 	MapUtils.initDefaultStyleV1(mapUI)
 	RicksMLC_MapUtils.ReplaceWaterStyle(mapUI)
 	RicksMLC_TreasureHuntMgr.Instance():setBoundsInSquares(mapAPI)
+    local currentMapInfo = RicksMLC_TreasureHuntMgr.Instance():FindCurrentlyReadTreasureHunt()
+    if currentMapInfo then
+        currentMapInfo.TreasureHunt:CallAnyVisualDecorator(currentMapInfo.MapNum, mapUI)
+    end
 	MapUtils.overlayPaper(mapUI)
+end
+
+function RicksMLC_TreasureHunt:CallAnyVisualDecorator(mapNum, mapUI)
+    if isTable(self.Treasures[mapNum]) and self.Treasures[mapNum].VisualDecorator then
+        local visualDecorator = RicksMLC_MapDecorators.Instance():Get(self.Treasures[mapNum].VisualDecorator)
+        if visualDecorator then
+            treasureModData = self.ModData.Maps[mapNum]
+            local visualDecoratorData = visualDecorator(mapUI, treasureModData.buildingCentreX, treasureModData.buildingCentreY, treasureModData.VisualDecoratorData)
+            if visualDecoratorData then
+                self.ModData.Maps[mapNum].VisualDecoratorData = visualDecoratorData
+                self:SaveModData()
+            end
+        end
+    end
 end
 
 local function calcBuildingCentre(buildingDef)

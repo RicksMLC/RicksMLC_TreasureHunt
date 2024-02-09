@@ -103,11 +103,20 @@ function RicksMLC_SampleTreasureHunts.MetalworkKitDecorator2(stashMap, x, y)
     stashMap:addStamp(nil, "Oops... you will need this too", x + 20, y, 0, 0, 0.75)
 end
 
+function RicksMLC_SampleTreasureHunts.MetalworkKitVisualDecorator(mapUI, x, y)
+    --overlayPNG(mapUI, 8500, 7320, 0.333, "legend", "media/textures/worldMap/Legend.png")
+    local scale = 1
+    local layerName = "legend"
+    local tex = "media/textures/worldMap/CoffeeStain.png"
+    local alpha = 0.3
+    RicksMLC_MapUtils.OverlayPNG(mapUI, x + 200, y + 200, scale, layerName, tex, alpha)
+end
 
 local function RegisterMapDecorators()
     RicksMLC_MapDecorators.Instance():Register("FluffyFootDecorator", RicksMLC_SampleTreasureHunts.FluffyFootDecorator)
     RicksMLC_MapDecorators.Instance():Register("SampleGenMagDecorator", RicksMLC_SampleTreasureHunts.GenMagDecorator)
     RicksMLC_MapDecorators.Instance():Register("MetalworkKitDecorator", RicksMLC_SampleTreasureHunts.MetalworkKitDecorator)
+    RicksMLC_MapDecorators.Instance():Register("MetalworkKitVisualDecorator", RicksMLC_SampleTreasureHunts.MetalworkKitVisualDecorator)
     RicksMLC_MapDecorators.Instance():Register("MetalworkKitDecorator2", RicksMLC_SampleTreasureHunts.MetalworkKitDecorator2)
 end
 
@@ -149,6 +158,7 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
         {Item = "BlowTorch", 
          Town = "Westpoint",
          Decorator = "MetalworkKitDecorator",
+         VisualDecorator = "MetalworkKitVisualDecorator",
          SuburbsDisributionsDefns = {
                 EmptySandbag = {rolls = 2, items = {"Acorn", 200000}, junk = {rolls = 1, items = {}}} ,
                 wardrobe = {rolls = 3, items = {"Banjo", 100, "Hat_Fedora_Delmote", 20 }, junk = {rolls = 1, items = {}}}
