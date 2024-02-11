@@ -182,6 +182,8 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
         },
         {Item = "WeldingMask", 
          Town = {"Louisville", MapNum = 1},
+         Zombies = 5,
+         Barricades = 60,
          Decorator = "MetalworkKitDecorator2", ProceduralDefns = {{Containers = {"cabinet"}, Procs = {{name=RicksMLC_HandyThings, min=1, max=1}}}}}
      }
     }

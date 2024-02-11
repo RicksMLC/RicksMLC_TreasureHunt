@@ -213,19 +213,27 @@ function RicksMLC_TreasureHunt:CreateTreasureModData(treasure, mapBounds)
     treasureModData.buildingCentreY = buildingCentre.y
     treasureModData.MapPath = mapBounds.MapPath
     treasureModData.Treasure = treasure
-    if type(self.Zombies) == "table" then
-        treasureModData.zombies = ZombRand(self.Zombies[1], self.Zombies[2])
+    local zombieSetting = self.Zombies
+    if isTable(treasure) and treasure.Zombies then
+        zombieSetting = treasure.Zombies
+    end
+    if type(zombieSetting) == "table" then
+        treasureModData.zombies = ZombRand(zombieSetting[1], zombieSetting[2])
     else
-        treasureModData.zombies = self.Zombies
+        treasureModData.zombies = zombieSetting
     end
 
     if RicksMLC_MapUtils.IsNoBarricadeBuilding(treasureModData.buildingCentreX, treasureModData.buildingCentreY) then
         treasureModData.barricades = 0
     else 
-        if type(self.Barricades) == "table" then
-            treasureModData.barricades = ZombRand(self.Barricades[1], self.Barricades[2])
+        local barricadeSetting = self.Barricades
+        if isTable(treasure) and treasure.Barricades then
+            barricadeSetting = treasure.Barricades
+        end
+        if type(barricadeSetting) == "table" then
+            treasureModData.barricades = ZombRand(barricadeSetting[1], barricadeSetting[2])
         else
-            treasureModData.barricades = self.Barricades
+            treasureModData.barricades = barricadeSetting
         end
     end
     treasureModData.Found = false
