@@ -42,10 +42,11 @@ local function isTable(o)
     return (type(o) == 'table')
 end
 
-require "StashDescriptions/RicksMLC_TreasureHuntStash"
+require "RicksMLC_TreasureHuntDistributions"
 require "RicksMLC_MapUtils"
 require "RicksMLC_SharedUtils"
-require "RicksMLC_StashDescLookup"
+require "StashDescriptions/RicksMLC_StashDescLookup"
+require "StashDescriptions/RicksMLC_TreasureHuntStash"
 require "ISBaseObject"
 
 LuaEventManager.AddEvent("RicksMLC_TreasureHunt_Finished")
@@ -260,9 +261,22 @@ function RicksMLC_TreasureHunt:CallDecorator(stashMap, treasureModData, i)
     end
 end
 
+local function dumpStash(stashMap)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash.AddStash() spawnTable " .. stashMap.spawnTable)
+    local dist = SuburbsDistributions
+
+    local tmpTable = dist[stashMap.spawnTable]
+    if tmpTable then
+        RicksMLC_THSharedUtils.DumpArgs(tmpTable, 0, "SuburbsDistributions stashMap.spawnTable")
+    end
+    local tmpProcTable = ProceduralDistributions.list[stashMap.spawnTable .. "Proc"]
+    if tmpProcTable then
+        RicksMLC_THSharedUtils.DumpArgs(tmpProcTable, 0, "stashMap.spawnTable .. Proc")
+    end
+end
+
 function RicksMLC_TreasureHunt:AddStashMap(treasureModData, i, stashLookup)
     local stashMapName = self:GenerateMapName(i)
-    -- FIXME: Should the StashDescLookup re-populate the lookup each time so new maps are included?
     local stashDesc = RicksMLC_StashDescLookup.Instance():StashLookup(stashMapName)
     if not stashDesc then
         DebugLog.log(DebugType.Mod, "   Adding stash for " .. stashMapName)
@@ -275,8 +289,11 @@ function RicksMLC_TreasureHunt:AddStashMap(treasureModData, i, stashLookup)
             treasureModData.zombies,
             "Base." .. stashMapName,
             spawnTable)
+        
+            dumpStash(newStashMap)        
 
         self:CallDecorator(newStashMap, treasureModData, i)
+        RicksMLC_StashDescLookup.Instance():AddNewStash(stashMapName)
     else
         DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
         RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
@@ -318,6 +335,10 @@ function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown, optio
             town = RicksMLC_MapUtils.GetRandomTown()
         end
         local mapBounds = RicksMLC_MapUtils.GetMapExtents(town.Town, town.MapNum)
+        if not mapBounds then
+            DebugLog.log(DebugType.Mod, "ERROR: RicksMLC_TreasureHunt:GenerateTreasure() No map extents found for Town: '" .. town.Town .. "' MapNum: " .. tostring(town.MapNum) .. " No Treasure Map Generated.")
+            return
+        end
         self.ModData.Maps[i] = self:CreateTreasureModData(treasure, mapBounds)
         if not self.ModData.Maps[i] then return end -- If no building could be found abort.
         self.ModData.Maps[i].Town = town
@@ -330,6 +351,10 @@ function RicksMLC_TreasureHunt:GeneratePastTreasures()
     -- Assemble the treasure data for all treasures maps that have been made.
     for i, treasureModData in ipairs(self.ModData.Maps) do
         self:GenerateTreasure(self.Treasures[i], i, treasureModData.Town.Town, treasureModData.Town.MapNum)
+        if not self.ModData.Maps[i] then
+            -- The GenerateTreasure failed
+            self:FinishHunt(true)
+        end
         -- Ensure the stash distrubutions are included before generating the stashMaps, otherwise on restart the stash buildings will be empty.
         if not RicksMLC_TreasureHuntDistributions.Instance():IsInDistribution(self:GenerateMapName(i)) then
             RicksMLC_TreasureHuntDistributions.Instance():AddSingleTreasureToDistribution(self.Treasures[i], self:GenerateMapName(i))
@@ -380,6 +405,7 @@ function RicksMLC_TreasureHunt:AddNewTreasureToHunt(treasure, townName)
     -- The self.ModData.Maps[i] now contains the treasure data for the new map or null if aborted
     if not self.ModData.Maps[i] then
         DebugLog.log(DebugType.Mod, "ERROR: RicksMLC_TreasureHunt:AddNewTreasureToHunt() Unable to generate treasure map.")
+        self:FinishHunt(true)
         return
     end
     if not RicksMLC_TreasureHuntDistributions.Instance():IsInDistribution(self:GenerateMapName(i)) then
@@ -388,9 +414,13 @@ function RicksMLC_TreasureHunt:AddNewTreasureToHunt(treasure, townName)
     self:AddStashMap(self.ModData.Maps[i], i)
 end
 
-function RicksMLC_TreasureHunt:FinishHunt()
+function RicksMLC_TreasureHunt:FinishHunt(bError)
     self.ModData.Finished = true
     self:SaveModData()
+    if bError then
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:FinishHunt() Finished in ERROR state - something went wrong.")
+        return
+    end
     triggerEvent("RicksMLC_TreasureHunt_Finished", self.TreasureHuntDefn)
 end
 
@@ -400,7 +430,6 @@ function RicksMLC_TreasureHunt:GenerateNextTreasureMap()
         self:FinishHunt()
         return
     end
-    -- FIXME: Need to add the optional MapNum so maps like LV can be used...
     self:AddNewTreasureToHunt(self.Treasures[i], self.Town)
     -- The StashSystem.reinit() is necessary when adding a stash after the game is started.
     -- If the StashSystem is not reinitialised the StashSystem.getStash() not find the stash, even if the
@@ -464,6 +493,10 @@ function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddNextMapToZombie()")
     if not self.ModData.Maps[self.ModData.CurrentMapNum] or self.ModData.Maps[self.ModData.CurrentMapNum].Found then
         self:GenerateNextTreasureMap()
+        if self.ModData.Finished then
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddNextMapToZombie() Generated map failed. FINISHED - Aborting AddNextMapToZombie()")
+            return
+        end
     end
     local mapItem = self:GenerateNextMapItem()
     if zombie then

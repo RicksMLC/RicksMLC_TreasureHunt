@@ -1,8 +1,8 @@
 -- RicksMLC_TreasureHuntDistributions.lua
 
-require "Items/Distributions"
-require "Items/ProceduralDistributions"
-require "RicksMLC_TreasureHuntMgr"
+-- These are vanilla server items:
+--require "Items/Distributions"
+--require "Items/ProceduralDistributions"
 
 require "ISBaseObject"
 
@@ -108,11 +108,3 @@ function RicksMLC_TreasureHuntDistributions:AddTreasureListToDistribution(treasu
     end
     ItemPickerJava.Parse() -- Call Parse() to repopulate the ItemPickerJava cache so it finds the added item.
 end
-
--- local function TestAddLoot(key)
---     if key == Keyboard.KEY_F10 then
---         AddTreasureToDist("Needle")
---     end
--- end
-
--- Events.OnKeyPressed.Add(TestAddLoot)

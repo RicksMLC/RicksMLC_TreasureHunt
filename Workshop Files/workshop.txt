@@ -1,6 +1,5 @@
 version=0.8
 title=Rick's MLC Treasure Hunt
-description= THIS IS A BETA RELEASE.
 description= There is a trail of treasures in Knox County.  Single Player (for now)
 description= 
 description= This mod adds a sequence of treasure maps.  The first map will be found on the first zombie you hit.
@@ -11,7 +10,9 @@ description= For Modders: There is a Sample Treasure Hunt with instructions (bet
 description=
 description= Languages supported:English and (possibly badly translated): Spanish, Korean, Portuguese
 description=
-description= NOTE: BETA Issues: There may be some buildings chosen by the treasure hunt which have errors when the "Stash" is spawned.
+description= NOTE: Issues: There may be some buildings chosen by the treasure hunt which have errors when the "Stash" is spawned.
 description= One such building is the school at Rosewood, which threw a Java exception while trying to barricade an IsoWindow.
+description= 
+description= This mod is now Feature Complete for Single Player.  No Multiplayer support yet.
 tags=Build 41
 visibility=public

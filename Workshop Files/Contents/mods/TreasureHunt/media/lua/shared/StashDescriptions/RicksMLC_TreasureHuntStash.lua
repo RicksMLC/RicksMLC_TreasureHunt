@@ -1,21 +1,4 @@
 -- RicksMLC_TreasureHunt stash
-require "StashDescriptions/StashUtil"
-require "server/Items/Distributions"
-
-
-local function dumpStash(stashMap)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash.AddStash() spawnTable " .. stashMap.spawnTable)
-    local dist = SuburbsDistributions
-
-    local tmpTable = dist[stashMap.spawnTable]
-    if tmpTable then
-        RicksMLC_THSharedUtils.DumpArgs(tmpTable, 0, "SuburbsDistributions stashMap.spawnTable")
-    end
-    local tmpProcTable = ProceduralDistributions.list[stashMap.spawnTable .. "Proc"]
-    if tmpProcTable then
-        RicksMLC_THSharedUtils.DumpArgs(tmpProcTable, 0, "stashMap.spawnTable .. Proc")
-    end
-end
 
 RicksMLC_TreasureHuntStash = {}
 
@@ -36,6 +19,5 @@ function RicksMLC_TreasureHuntStash.AddStash(newStashName, x, y, barricades, zom
     -- StashUtil:addContainer(containerType,containerSprite,containerItem,room,x,y,z)
     -- NOTE: The containerItem matches with the distribution defined in RicksMLC_TreasureHuntDistributions:AddTreasureToDistribution(itemType)
     stashMap:addContainer(nil,nil,"Base.Bag_DuffelBagTINT",nil,nil,nil,nil) 
-    dumpStash(stashMap)
     return stashMap
 end

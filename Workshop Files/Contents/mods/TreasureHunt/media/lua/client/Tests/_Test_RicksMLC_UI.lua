@@ -37,11 +37,6 @@ end
 function _Test_RicksMLC_UI_Window:setObject(object)
 	self.object = object
 	self.panel:setName(self.title) --getText("IGUI_Generator_TypeGas"))
-	-- FIXME: Remove
-	--self.panel:setTexture(object:getTextureName())
-	--self.fuel = object:getFuel()
-	--self.condition = object:getCondition()
---	self.panel.description = _Test_RicksMLC_UI_Window.getRichText(object, true)
 end
 
 function _Test_RicksMLC_UI_Window.getRichText(testResults)

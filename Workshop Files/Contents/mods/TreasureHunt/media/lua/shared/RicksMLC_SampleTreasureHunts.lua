@@ -103,21 +103,41 @@ function RicksMLC_SampleTreasureHunts.MetalworkKitDecorator2(stashMap, x, y)
     stashMap:addStamp(nil, "Oops... you will need this too", x + 20, y, 0, 0, 0.75)
 end
 
-function RicksMLC_SampleTreasureHunts.MetalworkKitVisualDecorator(mapUI, x, y)
-    --overlayPNG(mapUI, 8500, 7320, 0.333, "legend", "media/textures/worldMap/Legend.png")
+local function RandomOffset(min, max)
+    local n = (ZombRand(1, 100) <= 50 and 1) or -1
+    return ZombRand(min, max) * n
+end
+
+local function DrawCoffeeStain(mapUI, x, y, visualDecoratorData)
     local scale = 1
     local layerName = "legend"
-    local tex = "media/textures/worldMap/CoffeeStain.png"
-    local alpha = 0.3
-    RicksMLC_MapUtils.OverlayPNG(mapUI, x + 200, y + 200, scale, layerName, tex, alpha)
+    local tex = "media/textures/worldMap/CoffeeStain2.png"
+
+    -- Randomise the location of the coffee stain - Note this makes one only on the first pass through this function
+    if not visualDecoratorData or not visualDecoratorData.CoffeeStain then
+        visualDecoratorData = visualDecoratorData or {}
+        local alpha = ZombRand(2, 6) / 10
+        visualDecoratorData.CoffeeStain = { X = x + RandomOffset(100, 500), Y = y + RandomOffset(100, 400), Alpha = alpha }
+    end
+    RicksMLC_MapUtils.OverlayPNG(mapUI, visualDecoratorData.CoffeeStain.X, visualDecoratorData.CoffeeStain.Y, scale, layerName, tex, visualDecoratorData.CoffeeStain.Alpha)    
+    return visualDecoratorData
+end
+
+-- Visual decorators can be used to add effects to the map, and record where they are so 
+-- they are in the same place the next time the map is opened.  Update the visualDecoratorData 
+-- and return it so the TreasureHunt will remember it.
+-- NOTE: All visual decorators MUST return the visualDecoratorData argument, even if no changes are made to its contents.
+local function SampleVisualDecorator(mapUI, x, y, visualDecoratorData)
+    visualDecoratorData = DrawCoffeeStain(mapUI, x, y, visualDecoratorData)
+    return visualDecoratorData
 end
 
 local function RegisterMapDecorators()
     RicksMLC_MapDecorators.Instance():Register("FluffyFootDecorator", RicksMLC_SampleTreasureHunts.FluffyFootDecorator)
     RicksMLC_MapDecorators.Instance():Register("SampleGenMagDecorator", RicksMLC_SampleTreasureHunts.GenMagDecorator)
     RicksMLC_MapDecorators.Instance():Register("MetalworkKitDecorator", RicksMLC_SampleTreasureHunts.MetalworkKitDecorator)
-    RicksMLC_MapDecorators.Instance():Register("MetalworkKitVisualDecorator", RicksMLC_SampleTreasureHunts.MetalworkKitVisualDecorator)
     RicksMLC_MapDecorators.Instance():Register("MetalworkKitDecorator2", RicksMLC_SampleTreasureHunts.MetalworkKitDecorator2)
+    RicksMLC_MapDecorators.Instance():Register("SampleVisualDecorator", SampleVisualDecorator)
 end
 
 ----
@@ -140,7 +160,7 @@ end
 -- The ProceduralDefns is a hybrid format which makes the Procs for each of the defined Containers.
 RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15}, Treasures = {
-        "BorisBadger",
+        {Item = "BorisBadger", VisualDecorator = "SampleVisualDecorator"},
         "FluffyfootBunny",
         "FreddyFox",
         "FurbertSquirrel",
@@ -158,7 +178,7 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
         {Item = "BlowTorch", 
          Town = "Westpoint",
          Decorator = "MetalworkKitDecorator",
-         VisualDecorator = "MetalworkKitVisualDecorator",
+         VisualDecorator = "SampleVisualDecorator",
          SuburbsDisributionsDefns = {
                 EmptySandbag = {rolls = 2, items = {"Acorn", 200000}, junk = {rolls = 1, items = {}}} ,
                 wardrobe = {rolls = 3, items = {"Banjo", 100, "Hat_Fedora_Delmote", 20 }, junk = {rolls = 1, items = {}}}
@@ -173,7 +193,7 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
                              {name="RicksMLC_HandyThings", min=1, max=3, weightChance=10}}
                 },
                 {
-                    Containers = {"fridge"}, -- FIXME: freezer doesn't populate?
+                    Containers = {"fridge"}, -- Note: freezer doesn't populate or requires real frozen food?
                     Procs = {{name="ArmyStorageGuns", min=1, max=2, weightChance=20},
                              {name="RicksMLC_HandyThings", min=1, max=7, weightChance=40},
                              {name="KitchenDryFood", min=1, max=2, weightChance=20}}

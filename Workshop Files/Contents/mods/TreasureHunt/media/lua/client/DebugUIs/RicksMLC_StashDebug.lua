@@ -1,5 +1,5 @@
 -- RicksMLC_StashDebug.lua
--- Overrides the vanilla StashDebug.onClick so it does not crash when the use clicks on a TreasureHunt stash.
+-- Overrides the vanilla StashDebug.onClick so it does not crash when the user clicks on a TreasureHunt stash.
 
 require "DebugUIs/StashDebug"
 require "RicksMLC_TreasureHuntMgr"
@@ -12,9 +12,8 @@ StashDebug.onClick = function(self, button)
         return
     end
     if self.selectedStash then
-        -- FIXME: Modify this code to find if the stash is a RicksMLC_TreasureHunt map
-        -- The code needs to reflect the function RicksMLC_TreasureHunt:GenerateNextMap() code.
-        -- Use the self.selectedStash:getItem() to detect it is a RicksMLC_TreasureHunt_ map, 
+        -- The code reflects the function RicksMLC_TreasureHunt:GenerateNextMap() code.
+        -- It uses the self.selectedStash:getItem() to detect it is a RicksMLC_TreasureHunt_ map, 
         -- and use the rest of the string up to the "(" to get the name to match.
         local itemName = self.selectedStash:getItem()
         local tmString = "RicksMLC_TreasureMap"

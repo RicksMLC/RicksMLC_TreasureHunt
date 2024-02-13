@@ -54,14 +54,13 @@ RicksMLC_Commands.TreasureHunt = {}
 
 function RicksMLC_Commands.TreasureHunt.AddTreasureHunt(player, args)
     DebugLog.log(DebugType.Mod, "RicksMLC_Commands.TreasureHunt.AddTreasureHunt()")
-    --RicksMLC_TreasureHuntMgr.Instance():HandleClientOnHitZombie(player, args)
 end
 
 function RicksMLC_TreasureHuntS.OnClientCommand(moduleName, command, player, args)
     -- Receive a message from a client
     --DebugLog.log(DebugType.Mod, 'RicksMLC_SpawnServer.OnClientCommand() ' .. moduleName .. "." .. command)
     if RicksMLC_Commands[moduleName] and RicksMLC_Commands[moduleName][command] then
-        -- FIXME: Comment out when done?
+        -- FIXME: Comment out when MP is done?
         -- local argStr = ''
  		-- for k,v in pairs(args) do argStr = argStr..' '..k..'='..tostring(v) end
  		-- DebugLog.log(DebugType.Mod, 'received '..moduleName..' '..command..' '..tostring(player)..argStr)

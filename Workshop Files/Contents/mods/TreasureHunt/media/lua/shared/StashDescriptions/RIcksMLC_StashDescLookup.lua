@@ -29,3 +29,7 @@ end
 function RicksMLC_StashDescLookup:StashLookup(stashMapName)
     return self.stashLookup[stashMapName]
 end
+
+function RicksMLC_StashDescLookup:AddNewStash(name)
+    self.stashLookup[name] = "foo"
+end

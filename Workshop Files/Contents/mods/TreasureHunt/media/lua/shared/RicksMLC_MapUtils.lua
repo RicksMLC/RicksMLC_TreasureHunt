@@ -48,6 +48,10 @@ function RicksMLC_MapUtils.GetMapExtents(townName, mapNum)
     if mapNum then
         mapExtents = mapExtents[townName  .. "Map" .. tostring(mapNum)]
     end
+    if not mapExtents then
+        DebugLog.log(DebugType.Mod, "ERROR: RicksMLC_MapUtils.GetMapExtents() No map found for Town: '" .. townName .. "' MapNum: " .. tostring(mapNum))
+        return nil
+    end
     return {x1 = mapExtents[1], y1 = mapExtents[2], x2 = mapExtents[3], y2 = mapExtents[4], MapPath = mapExtents[5]}
 end
 

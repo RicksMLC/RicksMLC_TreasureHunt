@@ -126,11 +126,6 @@ function RicksMLC_TreasureHuntMgr:setBoundsInSquares(mapAPI)
     if currentMapInfo then
         currentMapInfo.TreasureHunt:setBoundsInSquares(mapAPI, currentMapInfo.MapNum)
     end
-    -- FIXME Remove:
-    -- local mapLookup = RicksMLC_MapIDLookup.Instance():GetReadingMap()
-    -- if mapLookup then
-    --     self.TreasureHunts[mapLookup.HuntId]:setBoundsInSquares(mapAPI, mapLookup.MapNum)
-    -- end
 end
 
 function RicksMLC_TreasureHuntMgr:FindCurrentlyReadTreasureHunt()
@@ -177,15 +172,11 @@ function RicksMLC_TreasureHuntMgr:AddTreasureHunt(treasureHuntDefn, isFromModDat
 
     self.TreasureHunts[#self.TreasureHunts+1] = RicksMLC_TreasureHunt:new(treasureHuntDefn, #self.TreasureHunts+1)
     self.TreasureHunts[#self.TreasureHunts]:InitTreasureHunt()
-    -- FIXME Remove: moved to an event RicksMLC_TreasureHuntMgr_AddTreasureHunt
-    -- local checkResult = self.TreasureHunts[#self.TreasureHunts]:CheckIfNewMapNeeded(getPlayer()) -- FIXME: This is a client-only function
-    -- if checkResult.NewMapNeeded then
-    --     RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
-    -- end
 
-    if isFromModData then return end -- Avoid infinite loop/leak by not adding to the ModData
-
-    self:UpdateTreasureHuntDefns(treasureHuntDefn)
+    if not isFromModData then 
+        -- Avoid infinite loop/leak by not adding to the ModData
+        self:UpdateTreasureHuntDefns(treasureHuntDefn)
+    end
     triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt", self.TreasureHunts[#self.TreasureHunts])
 end
 
@@ -328,7 +319,7 @@ function RicksMLC_TreasureHuntMgr:ResetLostMaps()
 end
 
 function RicksMLC_TreasureHuntMgr:CheckIfNewMapNeeded()
-    --FIXME: Needs implementing
+    --FIXME: Muiltiplayer Code.  Needs implementing.  No effect in SP for now.
 end
 
 function RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
