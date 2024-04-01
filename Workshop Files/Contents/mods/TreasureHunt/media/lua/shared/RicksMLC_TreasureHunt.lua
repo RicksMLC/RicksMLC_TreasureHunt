@@ -138,15 +138,18 @@ RicksMLC_TreasureHunt.MapDefnFn = function(mapUI)
 end
 
 function RicksMLC_TreasureHunt:CallAnyVisualDecorator(mapNum, mapUI)
+    local visualDecoratorName = self.TreasureHuntDefn.VisualDecorator
     if isTable(self.Treasures[mapNum]) and self.Treasures[mapNum].VisualDecorator then
-        local visualDecorator = RicksMLC_MapDecorators.Instance():Get(self.Treasures[mapNum].VisualDecorator)
-        if visualDecorator then
-            treasureModData = self.ModData.Maps[mapNum]
-            local visualDecoratorData = visualDecorator(mapUI, treasureModData.buildingCentreX, treasureModData.buildingCentreY, treasureModData.VisualDecoratorData)
-            if visualDecoratorData then
-                self.ModData.Maps[mapNum].VisualDecoratorData = visualDecoratorData
-                self:SaveModData()
-            end
+        -- Override the common VisualDecorator with the one defined for this particular treasure item.
+        visualDecoratorName = self.Treasures[mapNum].VisualDecorator
+    end
+    if visualDecoratorName then
+        local visualDecorator = RicksMLC_MapDecorators.Instance():Get(visualDecoratorName)
+        treasureModData = self.ModData.Maps[mapNum]
+        local visualDecoratorData = visualDecorator(mapUI, treasureModData.buildingCentreX, treasureModData.buildingCentreY, treasureModData.VisualDecoratorData)
+        if visualDecoratorData then
+            self.ModData.Maps[mapNum].VisualDecoratorData = visualDecoratorData
+            self:SaveModData()
         end
     end
 end
@@ -249,6 +252,9 @@ end
 function RicksMLC_TreasureHunt:CallDecorator(stashMap, treasureModData, i)
     -- Call any Decorator Callback function defined for this treasure item to customise the text and symbols on the map
     local decoratorName = self.TreasureHuntDefn.Decorators and self.TreasureHuntDefn.Decorators[i]
+    if not decoratorName then
+        decoratorName = self.TreasureHuntDefn.Decorator -- just in case there is a single decorator which is used all treasures.
+    end
     if isTable(self.Treasures[i]) and self.Treasures[i].Decorator then
         -- The Item decorator overrides the general decorator list for the hunt.
         decoratorName = self.Treasures[i].Decorator
@@ -573,7 +579,7 @@ function RicksMLC_TreasureHunt:CheckIfNewMapNeeded(player)
     else
         local treasureModData = self.ModData.Maps[self.ModData.CurrentMapNum]
         local itemContainer = player:getInventory()
-        local itemList = itemContainer:getAllEvalArgRecurse(matchAnyTreasureClosure, self) --treasureModData.Treasure)
+        local itemList = itemContainer:getAllEvalArgRecurse(matchAnyTreasureClosure, self)
         if not itemList:isEmpty() then
             for i = 0, itemList:size()-1 do 
                 local item = itemList:get(i)
