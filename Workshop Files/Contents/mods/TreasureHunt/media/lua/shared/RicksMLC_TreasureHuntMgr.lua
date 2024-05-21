@@ -178,6 +178,7 @@ function RicksMLC_TreasureHuntMgr:AddTreasureHunt(treasureHuntDefn, isFromModDat
         self:UpdateTreasureHuntDefns(treasureHuntDefn)
     end
     triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt", self.TreasureHunts[#self.TreasureHunts])
+    return self.TreasureHunts[#self.TreasureHunts] -- return the generated treasure hunt
 end
 
 function RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions(treasureHuntDefinitions, isFromModData)
@@ -217,64 +218,61 @@ function RicksMLC_TreasureHuntMgr:LoadSampleTreasureHunts()
     self:SaveModData()
 end
 
-function RicksMLC_TreasureHuntMgr:HandleOnHitZombie(zombie, character)
+function RicksMLC_TreasureHuntMgr:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon)
     -- Note: OnHitZombie is a client-side event, so no need to check for not isServer()
-    if not isServer() and isClient() then
-        -- Send the OnHitZombie message to the server
-        local args = {zombie = zombie, character = character, bodyPartType = bodyPartType, handWeapon = handWeapon}
-        sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgr", "ClientOnHitZombie", args)
-        self.HitZombie = zombie
-    else
-        for i, treasureHunt in ipairs(self.TreasureHunts) do
-            treasureHunt:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon)
-        end
-    end
-end
-
-function RicksMLC_TreasureHuntMgr:HandleClientOnHitZombie(player, args)
-    -- Server has received a message that the client has hit a zombie
+    -- if not isServer() and isClient() then
+    --     -- Send the OnHitZombie message to the server
+    --     local args = {zombie = zombie, character = character, bodyPartType = bodyPartType, handWeapon = handWeapon}
+    --     sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgr", "ClientOnHitZombie", args)
+    --     self.HitZombie = zombie
+    -- else
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.HandleOnHitZombie()")
     for i, treasureHunt in ipairs(self.TreasureHunts) do
-        treasureHunt:HandleClientOnHitZombie(player, args.character)
+        treasureHunt:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon, true) -- doStash = true for non-client/server
     end
+    --end
 end
 
-function RicksMLC_TreasureHuntMgr:MapItemGenerated(args)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:MapItemGenerated")
-    if self.HitZombie then
-        DebugLog.log(DebugType.Mod, "    mapItem: " .. mapItem:getName())
-        self.HitZombie:addItemToSpawnAtDeath(args.mapItem)
-    end
-    self.HitZombie = nil
-end
+-- FIXME: Move to mgr client
+-- function RicksMLC_TreasureHuntMgr:MapItemGenerated(args)
+--     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:MapItemGenerated")
+--     if self.HitZombie then
+--         DebugLog.log(DebugType.Mod, "    mapItem: " .. mapItem:getName())
+--         self.HitZombie:addItemToSpawnAtDeath(args.mapItem)
+--     end
+--     self.HitZombie = nil
+-- end
 
 
 ------------------------------------------------------------
 -- Static methods
-function RicksMLC_TreasureHuntMgr.OnClientCommand(moduleName, command, player, args)
-    if moduleName == "RicksMLC_TreasureHuntMgr" then
-        if command == "ClientOnHitZombie" then
-            RicksMLC_TreasureHuntMgr.Instance():HandleClientOnHitZombie(player, args)
-        end
-    end
-end
+-- FIXME: Remove: These are in the derived classes for the mgr client and server
+-- function RicksMLC_TreasureHuntMgr.OnClientCommand(moduleName, command, player, args)
+--     if moduleName == "RicksMLC_TreasureHuntMgr" then
+--         if command == "ClientOnHitZombie" then
+--             RicksMLC_TreasureHuntMgr.Instance():HandleClientOnHitZombie(player, args)
+--         end
+--     end
+-- end
 
-function RicksMLC_TreasureHuntMgr.OnServerCommand(moduleName, command, args)
-    if moduleName == "RicksMLC_TreasureHuntMgr" then
-        if command == "MapItemGenerated" then
-            RicksMLC_TreasureHuntMgr.Instance():MapItemGenerated(args)
-        elseif command == "AddTreasureHunt" then
-            triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt")
-        end
-    end
-end
+-- function RicksMLC_TreasureHuntMgr.OnServerCommand(moduleName, command, args)
+--     if moduleName == "RicksMLC_TreasureHuntMgr" then
+--         if command == "MapItemGenerated" then
+--             RicksMLC_TreasureHuntMgr.Instance():MapItemGenerated(args)
+--         elseif command == "AddTreasureHunt" then
+--             triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt")
+--         end
+--     end
+-- end
 
 function RicksMLC_TreasureHuntMgr.OnHitZombie(zombie, character, bodyPartType, handWeapon)
     --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnHitZombie()")
     -- Make sure it's not just any character that hits the zombie
 
     if character == getPlayer() then
-        RicksMLC_TreasureHuntMgr.Instance():HandleOnHitZombie(zombie, character)
+        RicksMLC_TreasureHuntMgr.Instance():HandleOnHitZombie(zombie, character, bodyPartType, handWeapon)
         -- -- Note: OnHitZombie is a client-side event, so no need to check for not isServer()?
+        -- FIXME: Remove
         -- if not isServer() and isClient() then
         --     -- Send the OnHitZombie message to the server
         --     local args = {zombie = zombie, character = character, bodyPartType = bodyPartType, handWeapon = handWeapon}
@@ -334,33 +332,33 @@ function RicksMLC_TreasureHuntMgr.OnGameStart()
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnGameStart end")
 end
 
-function RicksMLC_TreasureHuntMgr.OnServerStarted()
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnServerStarted start")
-    Events.EveryOneMinute.Add(RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnServerStarted end")
-end
+-- FIXME: Moved to RicksMLC_TreasureHuntMgrServer
+-- function RicksMLC_TreasureHuntMgr.OnServerStarted()
+--     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnServerStarted start")
+--     Events.EveryOneMinute.Add(RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart)
+--     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnServerStarted end")
+-- end
 
 local startCount = 0
 function RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart()
     startCount = startCount + 1
-    if startCount < 1 then return end
+    if startCount < 5 then return end
     RicksMLC_TreasureHuntMgr.Instance():InitTreasureHunts()
     RicksMLC_TreasureHuntMgr.Initialsed = true
     Events.EveryOneMinute.Remove(RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart)
     triggerEvent("RicksMLC_TreasureHuntMgr_InitDone") 
 end
 
-function RicksMLC_TreasureHuntMgr.OnAddTreasureHunt(newTreasureHunt)
-    if isServer() then
-        --triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt")
-        local args = {NewTreasureHunt = newTreasureHunt}
-        sendServerCommand("RicksMLC_TreasureHuntMgr", "AddTreasureHunt", args)
-        return
-    end
+function RicksMLC_TreasureHuntMgr:HandleOnAddTreasureHunt(newTreasureHunt)
+    -- Override this on the serve and client.
     local checkResult = newTreasureHunt:CheckIfNewMapNeeded(getPlayer()) -- Note: This is a client-only function
     if checkResult.NewMapNeeded then
         RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
     end
+end
+
+function RicksMLC_TreasureHuntMgr.OnAddTreasureHunt(newTreasureHunt)
+    RicksMLC_TreasureHuntMgr.Instance():HandleOnAddTreasureHunt(newTreasureHunt)
 end
 
 -- Use this for testing/prototyping only
@@ -371,8 +369,10 @@ end
 
 -- Commented out code - uncomment to make temp test
 --Events.OnKeyPressed.Add(RicksMLC_TreasureHuntMgr.OnKeyPressed)
-if isClient() or not isServer() then
-    -- Ie: client in MP or single player
+
+if not isClient() and not isServer() then
+    -- Ie: single player
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr: stand alone. Add OnGameStart")
     Events.OnGameStart.Add(RicksMLC_TreasureHuntMgr.OnGameStart)
 end
 Events.RicksMLC_TreasureHuntMgr_AddTreasureHunt.Add(RicksMLC_TreasureHuntMgr.OnAddTreasureHunt)

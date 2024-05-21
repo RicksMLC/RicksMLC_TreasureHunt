@@ -114,3 +114,40 @@ end
 
 --------------------------------------
 
+-- Copied from java class AmbientStreamManager
+function RicksMLC_MapUtils.getNearestBuildingDef(x, y, ...)
+    local closestXY = Vector2f:new(1000, 1000)
+    return AmbientStreamManager.instance:getNearestBuilding(x,  y, closestXY)
+end
+-- function RicksMLC_MapUtils.getNearestBuildingDef(x, y, ...)
+--     local isoWorldInstance = IsoWorld.instance
+--     local metaGrid = IsoWorld.instance:getMetaGrid();
+--     local targetCellX = PZMath.fastfloor(x / 300.0);
+--     local targetCellY = PZMath.fastfloor(y / 300.0);
+--     local buildingDef = nil;
+--     local maxDist = Float.MAX_VALUE;
+--     local closestXY = Vector2f:new(0, 0)
+--     --closestXY:set(0.0);
+--     local tmpClosestXY = Vector2f:new(1000, 1000);
+
+--     for cellY = targetCellY - 1, targetCellY + 1 do
+--         for cellX = targetCellX - 1, targetCellX + 1 do
+--             local isoMetaCell = metaGrid:getCellData(cellX, cellY);
+--             if (isoMetaCell ~= nil and isoMetaCell.info ~= nil) then
+--                 local iterator = isoMetaCell.info.Buildings:iterator();
+
+--                 while iterator:hasNext() do
+--                     local tmpBuildingDef = iterator:next();
+--                     local dist = tmpBuildingDef:getClosestPoint(x, y, tmpClosestXY);
+--                     if (dist < maxDist) then
+--                         maxDist = dist;
+--                         buildingDef = tmpBuildingDef;
+--                         closestXY:set(tmpClosestXY);
+--                     end
+--                 end
+--             end
+--         end
+--     end
+
+--     return buildingDef
+-- end

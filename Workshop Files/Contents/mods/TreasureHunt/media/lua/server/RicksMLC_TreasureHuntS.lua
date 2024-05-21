@@ -9,13 +9,10 @@ require "Map/SGlobalObjectSystem"
 
 RicksMLC_TreasureHuntS = SGlobalObjectSystem:derive("RicksMLC_TreasureHuntS")
 function RicksMLC_TreasureHuntS:new()
- 	local o = SGlobalObjectSystem.new(self, "RicksMLC_TreasureHunt")
+ 	local o = SGlobalObjectSystem.new(self, "RicksMLC_TreasureHuntS")
 
     -- Declare the global client/server shared information here.
-    o.zombieSpawnList = { }
-    o.numTrackedZombies = 0
-    --o.dogTagDisplayName = InventoryItemFactory.CreateItem("Necklace_DogTag"):getDisplayName()
-
+    o.treasureHunts = { }
  	return o
 end
 
@@ -34,7 +31,7 @@ function RicksMLC_TreasureHuntS:initSystem()
 	SGlobalObjectSystem.initSystem(self)
 
 	-- Specify GlobalObjectSystem fields that should be saved.
-	self.system:setModDataKeys({'zombieSpawnList', 'numTrackedZombies', 'safehouseSafeZoneRadius'})
+	self.system:setModDataKeys({'treasureHunts'})
 end
 
 function RicksMLC_TreasureHuntS:getInitialStateForClient()
@@ -42,9 +39,7 @@ function RicksMLC_TreasureHuntS:getInitialStateForClient()
 	-- This is called when a client connects in multiplayer, and after
 	-- server-side systems are created in singleplayer.
 	return { 
-        zombieSpawnList = self.zombieSpawnList,
-        numTrackedZombies = self.numTrackedZombies,
-        safehouseSafeZoneRadius = self.safehouseSafeZoneRadius
+        treasureHunts = self.treasureHunts
     }
 end
 

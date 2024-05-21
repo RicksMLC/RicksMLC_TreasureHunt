@@ -178,8 +178,7 @@ function RicksMLC_TreasureHunt:IsDuplicateBuilding(nearestBuildingDef)
 end
 
 function RicksMLC_TreasureHunt:getNearestBuildingDef(x, y)
-    local closestXY = Vector2f:new(1000, 1000)
-    return AmbientStreamManager.instance:getNearestBuilding(x,  y, closestXY)
+    return RicksMLC_MapUtils.getNearestBuildingDef(x, y)
 end
 
 -- Choose a random buiding for the treasure.
@@ -188,7 +187,7 @@ function RicksMLC_TreasureHunt:ChooseRandomBuilding(mapBounds)
     local y = ZombRand(mapBounds.y1, mapBounds.y2)
     local nearestBuildingDef = self:getNearestBuildingDef(x, y)
     local retries = 20
-    while (not nearestBuildingDef or nearestBuildingDef:isHasBeenVisited() or self:IsDuplicateBuilding(nearestBuildingDef) and retries > 0) do
+    while ((not nearestBuildingDef or nearestBuildingDef:isHasBeenVisited() or self:IsDuplicateBuilding(nearestBuildingDef)) and retries > 0) do
         x = ZombRand(mapBounds.x1, mapBounds.x2)
         y = ZombRand(mapBounds.y1, mapBounds.y2)
         nearestBuildingDef = self:getNearestBuildingDef(x,  y)
@@ -281,46 +280,70 @@ local function dumpStash(stashMap)
     end
 end
 
-function RicksMLC_TreasureHunt:AddStashMap(treasureModData, i, stashLookup)
+function RicksMLC_TreasureHunt:AddStashToStashUtil(treasureModData, i, stashMapName)
+    local spawnTable = stashMapName -- This string is the lookup into the SuburbsDisributions table.  See RicksMLC_TreasureHuntDistributions.lua
+    local newStashMap = RicksMLC_TreasureHuntStash.AddStash(
+        stashMapName,
+        treasureModData.buildingCentreX,
+        treasureModData.buildingCentreY, 
+        treasureModData.barricades,
+        treasureModData.zombies,
+        "Base." .. stashMapName,
+        spawnTable)
+    
+        dumpStash(newStashMap)        
+
+    self:CallDecorator(newStashMap, treasureModData, i)
+    RicksMLC_StashDescLookup.Instance():AddNewStash(stashMapName)
+end
+
+function RicksMLC_TreasureHunt:AddStashMap(treasureModData, i)
     local stashMapName = self:GenerateMapName(i)
     local stashDesc = RicksMLC_StashDescLookup.Instance():StashLookup(stashMapName)
     if not stashDesc then
-        DebugLog.log(DebugType.Mod, "   Adding stash for " .. stashMapName)
-        local spawnTable = stashMapName -- This string is the lookup into the SuburbsDisributions table.  See RicksMLC_TreasureHuntDistributions.lua
-        local newStashMap = RicksMLC_TreasureHuntStash.AddStash(
-            stashMapName,
-            treasureModData.buildingCentreX,
-            treasureModData.buildingCentreY, 
-            treasureModData.barricades,
-            treasureModData.zombies,
-            "Base." .. stashMapName,
-            spawnTable)
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashMap() Adding stash for " .. stashMapName)
+        self:AddStashToStashUtil(treasureModData, i, stashMapName)
+        -- local spawnTable = stashMapName -- This string is the lookup into the SuburbsDisributions table.  See RicksMLC_TreasureHuntDistributions.lua
+        -- local newStashMap = RicksMLC_TreasureHuntStash.AddStash(
+        --     stashMapName,
+        --     treasureModData.buildingCentreX,
+        --     treasureModData.buildingCentreY, 
+        --     treasureModData.barricades,
+        --     treasureModData.zombies,
+        --     "Base." .. stashMapName,
+        --     spawnTable)
         
-            dumpStash(newStashMap)        
+        --     dumpStash(newStashMap)        
 
-        self:CallDecorator(newStashMap, treasureModData, i)
-        RicksMLC_StashDescLookup.Instance():AddNewStash(stashMapName)
+        -- self:CallDecorator(newStashMap, treasureModData, i)
+        -- RicksMLC_StashDescLookup.Instance():AddNewStash(stashMapName)
     else
         DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
         RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
     end
-    LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
-    RicksMLC_MapIDLookup.Instance():AddMapID(self:GenerateMapName(i), self.HuntId, i)
+    if isClient() or not isServer() then
+        LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
+    end
+    RicksMLC_MapIDLookup.Instance():AddMapID(stashMapName, self.HuntId, i)
 end
 
 function RicksMLC_TreasureHunt:AddStashMaps()
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddStashMaps()")
-    local stashLookup = {}
-    for i, stashDesc in ipairs(StashDescriptions) do
-        stashLookup[stashDesc.name] = stashDesc
-    end
+    --FIXME: Remove
+    -- local stashLookup = {}
+    -- for i, stashDesc in ipairs(StashDescriptions) do
+    --     stashLookup[stashDesc.name] = stashDesc
+    -- end
     for i, treasureModData in ipairs(self.ModData.Maps) do
         -- Check if the stash already exists
-        self:AddStashMap(treasureModData, i, stashLookup)
+        self:AddStashMap(treasureModData, i)
     end
 end
 
 -- GenerateTreasure(treasure,i) Generate the given treasure into the i'th position.
+-- Generate means:
+--      Choose a random town if none specified
+--      CreateTreasureModData() Chooses the building and sets the zombies, barricades
 -- The generated map is stored in the i'th postition in the self.ModData.Maps
 function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown, optionalMapNum)
     if self.ModData.Maps[i] then
@@ -390,6 +413,9 @@ end
 
 -- treasure could be a single string: simple case
 -- or a table, which means the treasure is a fine-grained treasure definition.
+-- Adding a new treasure hunt means:
+--      GenerateTreasure() choose the town and building and set the treasure defn for the vanilla Stash system (barricades, zombies)
+--      AddStashMap() Create the Stash map for the generated details to the vanilla stash system.
 function RicksMLC_TreasureHunt:AddNewTreasureToHunt(treasure, townName)
     local i = #self.ModData.Maps + 1
     local mapNum = nil
@@ -467,7 +493,7 @@ end
 -----------------------------------------------------------------------
 -- Functions for detecting the player found the treasure item.
 
-function RicksMLC_TreasureHunt:GenerateNextMapItem()
+function RicksMLC_TreasureHunt:GenerateNextMapItem(doStash)
     if not self.ModData.Maps then 
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateNextMapItem() Error: no treasureHunt data for player")
         return
@@ -481,7 +507,12 @@ function RicksMLC_TreasureHunt:GenerateNextMapItem()
     end
     local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
     mapItem:setMapID(self:GenerateMapName(self.ModData.CurrentMapNum))
-    StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.
+    if doStash then
+        StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GenerateNextMapItem(): doStashItem() called for '" .. mapItem:getMapID() .. "'")
+    else
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GenerateNextMapItem(): no doStashItem() called for '" .. mapItem:getMapID() .. "'")
+    end
     mapItem:setName(mapItem:getDisplayName() .. ": " .. self.Name .. " [" .. tostring(self.ModData.CurrentMapNum) .. "]")-- treasureItem:getDisplayName())
     mapItem:setCustomName(true)
     return mapItem
@@ -495,7 +526,7 @@ function RicksMLC_TreasureHunt:IsBuildingVisited()
     end
 end
 
-function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie)
+function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie, doStash)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddNextMapToZombie()")
     if not self.ModData.Maps[self.ModData.CurrentMapNum] or self.ModData.Maps[self.ModData.CurrentMapNum].Found then
         self:GenerateNextTreasureMap()
@@ -504,7 +535,7 @@ function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie)
             return
         end
     end
-    local mapItem = self:GenerateNextMapItem()
+    local mapItem = self:GenerateNextMapItem(doStash)
     if zombie then
         -- This may be called in the server, where the zombie is not defined
         zombie:addItemToSpawnAtDeath(mapItem)
@@ -512,9 +543,20 @@ function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie)
     -- Check if the building has been visited before now.
     if self:IsBuildingVisited() then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddNextMapToZombie(): WARNING Buiding already visited for map " .. mapItem:getName())
-        mapItem = nil
+        return nil
     end
-    return mapItem
+    local mapItemDetails = {
+        mapItem = mapItem,
+        stashMapName = mapItem:getMapID(), 
+        huntId = self.HuntId, 
+        i = self.ModData.CurrentMapNum, 
+        Name = self.Name,
+        displayName = mapItem:getDisplayName(),
+        treasureModData = self.ModData.Maps[self.ModData.CurrentMapNum],
+        Maps = self.ModData.Maps
+    } 
+    RicksMLC_THSharedUtils.DumpArgs(mapItemDetails, 0, "RicksMLC_TreasureHunt:AddNextMapToZombie() return:")
+    return mapItemDetails
 end
 
 function RicksMLC_TreasureHunt:Dump()
@@ -617,30 +659,51 @@ function RicksMLC_TreasureHunt:ResetLastSpawnedMapNum()
     end
 end
 
+-- FIXME: This is a workaround which may have to remain for the server side.
 function RicksMLC_TreasureHunt:HandleClientOnHitZombie(player, character)
     -- Server side handling of a client hitting a zombie - generate the treasure map defn (distribtions etc)
-    if self.ModData.Finished then return false end
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.HandleClientOnHitZombie() ".. self.Name)
+    if self.ModData.Finished then return nil end
+    local mapItemDetails = nil
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.HandleClientOnHitZombie() CurrentMapNum: " .. tostring(self.ModData.CurrentMapNum) .. " LastSpawnedMapNum " .. tostring(self.ModData.LastSpawnedMapNum))
+--    if self.ModData.CurrentMapNum == 0 then
+        -- FIXME: Should this really be incrementing as this is generating a new map anyway.
+        self.ModData.CurrentMapNum = self.ModData.CurrentMapNum + 1
+--    end
     if self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum then
+        mapItemDetails = self:AddNextMapToZombie(nil, true)
 
-        local mapItem = self:AddNextMapToZombie(nil)
-        if mapItem then
-            local args = {mapItem = mapItem}
-            sendServerCommand(player, "RicksMLC_TreasureHuntMgr", "MapItemGenerated", args)
-        end
         self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum
         self:SaveModData()
     end
+    return mapItemDetails
 end
 
-function RicksMLC_TreasureHunt:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon)
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.OnHitZombie()")
+-- function RicksMLC_TreasureHunt:HandleOnHitZombieNoStash(zombie, character, bodyPartType, handWeapon)
+--     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.HandleOnHitZombie()")
+--     if self.ModData.Finished then return false end
+--     -- Make sure it's not just any character that hits the zombie
+--     local mapItem = nil
+--     if character == getPlayer() and self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum then
+--         mapItemDetails = self:AddNextMapToZombie(zombie, false)
+--         self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum
+--         self:SaveModData()
+--     end
+--     return mapItemDetails 
+-- end
+
+
+function RicksMLC_TreasureHunt:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon, doStash)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.HandleOnHitZombie()")
     if self.ModData.Finished then return false end
     -- Make sure it's not just any character that hits the zombie
+    local mapItem = nil
     if character == getPlayer() and self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum then
-        self:AddNextMapToZombie(zombie)
+        mapItemDetails = self:AddNextMapToZombie(zombie, doStash)
         self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum
         self:SaveModData()
     end
+    return mapItemDetails
 end
 
 ---------------------------------------------

@@ -170,43 +170,45 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
         "Spiffo" },
         Decorators = {[2] = "FluffyFootDecorator"}
     },
-    {Name = "Maybe Helpful", Town = "SampleEkronTown", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}, Decorators = {[1] = "SampleGenMagDecorator"}}, -- GenMag
-    {Name = "Metalworker Kit", 
-     Barricades = 60,
-     Town = "Rosewood",
-     Treasures = {
-        {Item = "BlowTorch", 
-         Town = "Westpoint",
-         Decorator = "MetalworkKitDecorator",
-         VisualDecorator = "SampleVisualDecorator",
-         SuburbsDisributionsDefns = {
-                EmptySandbag = {rolls = 2, items = {"Acorn", 200000}, junk = {rolls = 1, items = {}}} ,
-                wardrobe = {rolls = 3, items = {"Banjo", 100, "Hat_Fedora_Delmote", 20 }, junk = {rolls = 1, items = {}}}
-            },
-         ProceduralDistributionDefns = {
-                RicksMLC_HandyThings = {rolls = 2, items = {"HandScythe", 200, "Yoghurt", 2000 }, junk = {rolls = 1, items = {}}},
-            },
-         ProceduralDefns = {
-                {
-                    Containers = {"crate", "metal_shelves", "shelves", "filingcabinet", "dresser"}, 
-                    Procs = {{name="CrateMetalwork", min=1, max=9, weightChance=20}, 
-                             {name="RicksMLC_HandyThings", min=1, max=3, weightChance=10}}
-                },
-                {
-                    Containers = {"fridge"}, -- Note: freezer doesn't populate or requires real frozen food?
-                    Procs = {{name="ArmyStorageGuns", min=1, max=2, weightChance=20},
-                             {name="RicksMLC_HandyThings", min=1, max=7, weightChance=40},
-                             {name="KitchenDryFood", min=1, max=2, weightChance=20}}
-                }
-            },
-        },
-        {Item = "WeldingMask", 
-         Town = {"Louisville", MapNum = 1},
-         Zombies = 5,
-         Barricades = 60,
-         Decorator = "MetalworkKitDecorator2", ProceduralDefns = {{Containers = {"cabinet"}, Procs = {{name=RicksMLC_HandyThings, min=1, max=1}}}}}
-     }
-    }
+
+    -- FIXME: Comment out for now to limit the test to Spiffo and Friends
+    -- {Name = "Maybe Helpful", Town = "SampleEkronTown", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}, Decorators = {[1] = "SampleGenMagDecorator"}}, -- GenMag
+    -- {Name = "Metalworker Kit", 
+    --  Barricades = 60,
+    --  Town = "Rosewood",
+    --  Treasures = {
+    --     {Item = "BlowTorch", 
+    --      Town = "Westpoint",
+    --      Decorator = "MetalworkKitDecorator",
+    --      VisualDecorator = "SampleVisualDecorator",
+    --      SuburbsDisributionsDefns = {
+    --             EmptySandbag = {rolls = 2, items = {"Acorn", 200000}, junk = {rolls = 1, items = {}}} ,
+    --             wardrobe = {rolls = 3, items = {"Banjo", 100, "Hat_Fedora_Delmote", 20 }, junk = {rolls = 1, items = {}}}
+    --         },
+    --      ProceduralDistributionDefns = {
+    --             RicksMLC_HandyThings = {rolls = 2, items = {"HandScythe", 200, "Yoghurt", 2000 }, junk = {rolls = 1, items = {}}},
+    --         },
+    --      ProceduralDefns = {
+    --             {
+    --                 Containers = {"crate", "metal_shelves", "shelves", "filingcabinet", "dresser"}, 
+    --                 Procs = {{name="CrateMetalwork", min=1, max=9, weightChance=20}, 
+    --                          {name="RicksMLC_HandyThings", min=1, max=3, weightChance=10}}
+    --             },
+    --             {
+    --                 Containers = {"fridge"}, -- Note: freezer doesn't populate or requires real frozen food?
+    --                 Procs = {{name="ArmyStorageGuns", min=1, max=2, weightChance=20},
+    --                          {name="RicksMLC_HandyThings", min=1, max=7, weightChance=40},
+    --                          {name="KitchenDryFood", min=1, max=2, weightChance=20}}
+    --             }
+    --         },
+    --     },
+    --     {Item = "WeldingMask", 
+    --      Town = {"Louisville", MapNum = 1},
+    --      Zombies = 5,
+    --      Barricades = 60,
+    --      Decorator = "MetalworkKitDecorator2", ProceduralDefns = {{Containers = {"cabinet"}, Procs = {{name=RicksMLC_HandyThings, min=1, max=1}}}}}
+    --  }
+    -- }
 }
 
 -- Optional example to add a custom Town to the list of possible towns.
