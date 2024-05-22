@@ -182,6 +182,7 @@ function RicksMLC_TreasureHuntMgr:AddTreasureHunt(treasureHuntDefn, isFromModDat
 end
 
 function RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions(treasureHuntDefinitions, isFromModData)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions()")
     for i, treasureHuntDefn in ipairs(treasureHuntDefinitions) do
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions() '" .. treasureHuntDefn.Name .. "'")
         self:AddTreasureHunt(treasureHuntDefn, isFromModData)
@@ -189,6 +190,7 @@ function RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions(treasureHuntDefini
 end
 
 function RicksMLC_TreasureHuntMgr:InitTreasureHunts()
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitTreasureHunts()")
     triggerEvent("RicksMLC_TreasureHuntMgr_PreInit")
     self:LoadModData()
     if self.ModData.TreasureHuntDefinitions == nil then

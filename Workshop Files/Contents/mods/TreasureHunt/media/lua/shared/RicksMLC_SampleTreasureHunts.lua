@@ -213,7 +213,7 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
 
 -- Optional example to add a custom Town to the list of possible towns.
 local function AddSampleTownToTreasureHunt()
-    DebugLog.log(DebugType.Mod, "AddSampleTownToTreasureHunt()")
+    DebugLog.log(DebugType.Mod, "RicksMLC_SampleTreasureHunts AddSampleTownToTreasureHunt()")
     local bounds = {6900, 8000, 7510, 8570, RicksMLC_MapUtils.DefaultMap()} -- Town bounds and map name
     RicksMLC_MapUtils.AddTown("SampleEkronTown", bounds)
 end

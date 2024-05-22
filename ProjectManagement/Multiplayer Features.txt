@@ -1,0 +1,15 @@
+Multiplayer Features.txt
+
+Initial phase is now re-working.  Generates the treasure maps on the client first zombie hit, and the server assigns the map and creates the item.
+
+To do:
+    1) Barricades are not real for the client.  They are visible, but not real.  Logging off and back on removes them.  
+        Sometimes they are real, and sometimes they are not.  It may be the client is sending the read update to the server
+        before the server can call mapItem:doBuildingStash().  Check if there is code to prevent it from doing twice.
+        The client is not supposed to doStash anyway?
+        The mapItem creation code calls the doStashItem and doBuildingStash on the server, so the map reading on the client
+        should be redundant?  The treasure was found in the cabin with fake barricades, so maybe the fake ones are an 
+        artifact of teleporting to the site and the building is not fully spawned in. See StashSystem var2.getBuilding().isFullyStreamedIn()
+        and check this before calling doBuilding() as a warning when teleporting, or at least check for corellation.
+
+    2) The second treasure (Fluffyfoot) is not not created.  Dunno why yet.

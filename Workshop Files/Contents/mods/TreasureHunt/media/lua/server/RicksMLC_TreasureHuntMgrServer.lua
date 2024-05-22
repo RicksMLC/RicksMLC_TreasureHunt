@@ -19,7 +19,7 @@ require "RicksMLC_TreasureHuntMgr"
 
 RicksMLC_TreasureHuntMgrServer = RicksMLC_TreasureHuntMgr:derive("RicksMLC_TreasureHuntMgrServer");
 
--- Override the base class Instance()?
+-- Override the base class Instance() so any calls on the server will use the server version.
 function RicksMLC_TreasureHuntMgr.Instance()
     if not RicksMLC_TreasureHuntMgrInstance then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.Instance() using RicksMLC_TreasureHuntMgrServer:new()")
@@ -60,6 +60,7 @@ function RicksMLC_TreasureHuntMgrServer:HandleOnAddTreasureHunt(newTreasureHunt)
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "AddTreasureHunt", args)
 end
 
+-- FIXME: Remove this?  Not used?
 function RicksMLC_TreasureHuntMgrServer:AddClientGeneratedTreasure(mapItemDetails)
     for i, treasureHunt in ipairs(self.TreasureHunts) do
         if treasureHunt.Name == mapItemDetails.Name then
@@ -78,6 +79,7 @@ function RicksMLC_TreasureHuntMgrServer:AddClientGeneratedTreasure(mapItemDetail
             local stash = StashSystem.getStash(mapItemDetails.stashMapName)
             if stash then
                 StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.
+                StashSystem.prepareBuildingStash(stash)
                 DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:AddClientGeneratedTreasure(): doStashItem() called for '" .. mapItem:getMapID() .. "'")
             else
                 DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:AddClientGeneratedTreasure() Error: No stash found in StashSystem.getStash('" .. mapItemDetails.stashMapName .. "')" )
@@ -111,6 +113,7 @@ function RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie(player, args)
     local replyArgs = {playerNum = player:getPlayerNum(), mapItemList = mapItemList}
     RicksMLC_THSharedUtils.DumpArgs(replyArgs, 0, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie() replyArgs")
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
+    --return replyArgs
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "MapItemsGenerated", replyArgs)
 
     -- FIXME: Commented out to try generating all and returning to the client

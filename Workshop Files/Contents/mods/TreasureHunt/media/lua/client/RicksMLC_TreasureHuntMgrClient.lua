@@ -11,7 +11,7 @@ require "RicksMLC_TreasureHuntMgr"
 
 RicksMLC_TreasureHuntMgrClient = RicksMLC_TreasureHuntMgr:derive("RicksMLC_TreasureHuntMgrClient")
 
--- Override the base class Instance()?
+-- Override the base class Instance() so client actions are performed
 function RicksMLC_TreasureHuntMgr.Instance()
     if not RicksMLC_TreasureHuntMgrInstance then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.Instance() using RicksMLC_TreasureHuntMgrClient:new()")    
@@ -69,6 +69,17 @@ function RicksMLC_TreasureHuntMgrClient:HandleOnHitZombie(zombie, character, bod
     --
 end
 
+function RicksMLC_TreasureHuntMgrClient:RecreateMapItem(mapItemDetails)
+    -- {mapItem = mapItem, stashMapName = mapItem:getMapID(), huntId = self.HuntId, i = self.ModData.CurrentMapNum}
+    local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
+    mapItem:setMapID(mapItemDetails.stashMapName)
+    --FIXME: Does the client need to update the stashsystem?
+    --StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.
+    mapItem:setName(mapItemDetails.mapItem:getDisplayName())-- treasureItem:getDisplayName())
+    mapItem:setCustomName(true)
+    return mapItem
+end
+
 function RicksMLC_TreasureHuntMgrClient:UpdateLootMapsInitFn(stashMapName, huntId, i)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:UpdateLootMapsInitFn() " .. stashMapName)
     LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
@@ -82,17 +93,6 @@ function RicksMLC_TreasureHuntMgrClient:UpdateTreasureHuntMap(mapItemDetails)
             treasureHunt.ModData.LastSpawnedMapNum = treasureHunt.ModData.CurrentMapNum
         end
     end
-end
-
-function RicksMLC_TreasureHuntMgrClient:RecreateMapItem(mapItemDetails)
-    -- {mapItem = mapItem, stashMapName = mapItem:getMapID(), huntId = self.HuntId, i = self.ModData.CurrentMapNum}
-    local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
-    mapItem:setMapID(mapItemDetails.stashMapName)
-    --FIXME: Does the client need to update the stashsystem?
-    --StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.
-    mapItem:setName(mapItemDetails.mapItem:getDisplayName())-- treasureItem:getDisplayName())
-    mapItem:setCustomName(true)
-    return mapItem
 end
 
 function RicksMLC_TreasureHuntMgrClient:HandleOnMapItemsGenerated(args)

@@ -509,6 +509,7 @@ function RicksMLC_TreasureHunt:GenerateNextMapItem(doStash)
     mapItem:setMapID(self:GenerateMapName(self.ModData.CurrentMapNum))
     if doStash then
         StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.
+        mapItem:doBuildingStash()
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GenerateNextMapItem(): doStashItem() called for '" .. mapItem:getMapID() .. "'")
     else
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GenerateNextMapItem(): no doStashItem() called for '" .. mapItem:getMapID() .. "'")
