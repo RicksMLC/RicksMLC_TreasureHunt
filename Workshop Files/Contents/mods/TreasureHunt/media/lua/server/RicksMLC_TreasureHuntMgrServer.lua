@@ -9,11 +9,21 @@
 -- Server side treaure hunt manager
 -- 1) init treasure hunts definitions
 -- 2) tell clients about registered treasure hunts
--- 3) 
+-- 3) sends a signal to the clients to make maps. ie: SetOnHitZombieForNewMap() 
+-- 4) The client intitates the map making. eg: Client OnHitZombie -> sendClientCommand("ClientOnHitZombie")
+-- 5) Server runs HandleClientOnHitZombie()
+--       -> CreateClientInitiatedMapItems() 
+--              calls each treasureHunt:HandleClientOnHitZombie() which turns the defn into the actual map (building etc) item, and calls the Stash system on the server.
+--       Makes the list of created mapItems for each treasureHunt which requires a map
+-- 6) sendServerCommand("MapItemsGenerated", args) with the mapItemList
+-- 7) Client assigns the generated maps to the hit zombie.
 
 if not isServer() or isClient() then return end
 
 DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer: Server code used")
+
+-- Inherits from RicksMLC_TreasureHuntMgr.  The overridden methods facilitate the client/server communications needed
+-- to co-ordinate the mgr status and synchronise between the clients and the server.
 
 require "RicksMLC_TreasureHuntMgr"
 
@@ -60,35 +70,6 @@ function RicksMLC_TreasureHuntMgrServer:HandleOnAddTreasureHunt(newTreasureHunt)
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "AddTreasureHunt", args)
 end
 
--- FIXME: Remove this?  Not used?
-function RicksMLC_TreasureHuntMgrServer:AddClientGeneratedTreasure(mapItemDetails)
-    for i, treasureHunt in ipairs(self.TreasureHunts) do
-        if treasureHunt.Name == mapItemDetails.Name then
-        --    local treasureHunt = self.TreasureHunts[mapItemDetails.Index]
-        --if treasureHunt then
-            -- treasureHunt: self.ModData.Maps[i] = self:CreateTreasureModData(treasure, mapBounds) - assign this from the client-generated map
-            RicksMLC_THSharedUtils.DumpArgs(treasureHunt, 0, "Existing Treasure Hunt")
-            RicksMLC_THSharedUtils.DumpArgs(mapItemDetails, 0, "mapItemDetails")
-            -- RicksMLC_TreasureHunt:AddStashMap(treasureModData, i)
-            treasureHunt.ModData.LastSpawnedMapNum = mapItemDetails.i
-            treasureHunt.ModData.Maps = mapItemDetails.Maps
-            treasureHunt:AddStashMap(mapItemDetails.treasureModData, mapItemDetails.i)
-            StashSystem.reinit() -- I think the reinit() is needed so the added stash is registered into the StashSystem othewise the getStash() does not find the stash
-            --local mapItem = self:RecreateMapItem(mapItemDetails)
-            local mapItem = mapItemDetails.mapItem
-            local stash = StashSystem.getStash(mapItemDetails.stashMapName)
-            if stash then
-                StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.
-                StashSystem.prepareBuildingStash(stash)
-                DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:AddClientGeneratedTreasure(): doStashItem() called for '" .. mapItem:getMapID() .. "'")
-            else
-                DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:AddClientGeneratedTreasure() Error: No stash found in StashSystem.getStash('" .. mapItemDetails.stashMapName .. "')" )
-            end
-            treasureHunt:SaveModData()
-        end
-    end
-end
-
 function RicksMLC_TreasureHuntMgrServer:CreateClientInitiatedMapItems(player, args)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:CreateClientInitiatedMapItems()")
     local mapItemList = {}
@@ -104,7 +85,6 @@ function RicksMLC_TreasureHuntMgrServer:CreateClientInitiatedMapItems(player, ar
     return mapItemList
 end
 
-
 function RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie(player, args)
     -- Server has received a message that the client has hit a zombie
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
@@ -115,21 +95,31 @@ function RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie(player, args)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
     --return replyArgs
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "MapItemsGenerated", replyArgs)
+end
 
-    -- FIXME: Commented out to try generating all and returning to the client
-    -- The args has generatedMapList which is a list of mapItemDetails:
-    --      {mapItem = mapItem, stashMapName = mapItem:getMapID(), huntId = self.HuntId, i = self.ModData.CurrentMapNum}
-    -- This list is incorporated back into the TreasureHuntMgr and sent to the other clients.
-    -- if #args.generatedMapList > 0 then
-    --     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie() mapItemList generated (" .. tostring(#args.generatedMapList) .. ")")
-    --     local mapItemList = {}
-    --     for _, mapItemDetails in ipairs(args.generatedMapList) do
-    --         self:AddClientGeneratedTreasure(mapItemDetails)
-    --     end
-    --     local replyArgs = {playerNum = player:getPlayerNum(), mapItemList = mapItemList}
-    --     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "MapItemsGenerated", replyArgs)
-    -- end
+function RicksMLC_TreasureHuntMgrServer:SendTreasureHuntList(player, args)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:SendTreasureHuntList() requestor: '" .. tostring(args.requestor) .. "'")
+    local treasureHuntList = {}
+    for i, treasureHunt in ipairs(self.TreasureHunts) do
+        treasureHuntList[i] = treasureHunt:GetCurrentTreasureHuntInfo() 
+    end
+    local retArgs = {playerNum = player:getPlayerNum(), data = treasureHuntList}
+    RicksMLC_THSharedUtils.DumpArgs(retArgs, 0, "SentTreasureHuntList")
+    sendServerCommand(args.requestor, "SentTreasureHuntList", retArgs)
+end
 
+function RicksMLC_TreasureHuntMgrServer:SendTreasureHuntInfo(player, args)
+    local thInfo = {}
+    -- FIXME: This may be incorrect as the index of the returned data is not the index requested.  This may turn into an out of sequence error.
+    if args.index then
+        thInfo[1] = self.TreasureHunts[args.index]:GetCurrentTreasureHuntInfo()
+    else
+        for i, treasureHunt in ipairs(self.TreasureHunts) do
+            thInfo[i] = treasureHunt:GetCurrentTreasureHuntInfo()
+        end
+    end
+    local args = {playerNum = player:getPlayerNum(), data = thInfo}
+    sendServerCommand(args.requestor, "SentTreasureHuntInfo", args)
 end
 
 -------------------------------------
@@ -137,12 +127,21 @@ end
 
 function RicksMLC_TreasureHuntMgrServer.OnClientCommand(moduleName, command, player, args)
     -- Receive a message from a client
-    --DebugLog.log(DebugType.Mod, 'RicksMLC_SpawnServer.OnClientCommand() ' .. moduleName .. "." .. command)
+    DebugLog.log(DebugType.Mod, 'RicksMLC_SpawnServer.OnClientCommand() ' .. moduleName .. "." .. command)
     if moduleName ~= "RicksMLC_TreasureHuntMgrServer" then return end
 
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer.OnClientCommand: " .. moduleName .. ", " .. command)
     if command == "ClientOnHitZombie" then
         RicksMLC_TreasureHuntMgr.Instance():HandleClientOnHitZombie(player, args)
+        return
+    end
+    if command == "RequestTreasureHuntsList" then
+        RicksMLC_TreasureHuntMgr.Instance():SendTreasureHuntList(player, args)
+        return
+    end
+    if command == "RequestTreasureHuntsInfo" then
+        RicksMLC_TreasureHuntMgr.Instance():SendTreasureHuntInfo(player, args)
+        return
     end
 end
 
@@ -152,6 +151,8 @@ Events.OnClientCommand.Add(RicksMLC_TreasureHuntMgrServer.OnClientCommand)
 function RicksMLC_TreasureHuntMgrServer.OnServerStarted()
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer.OnServerStarted()")
     RicksMLC_TreasureHuntMgr.Instance()
+    -- Create and AmbientStreamManager on the server.  The AmbientStreamManager is used by the TreasureHunt to calculate the closest building
+    -- but the AmbientStreamManager in vanilla PZ only exists on the client side.  Therefore we create one here if it does not already exist.
     if not AmbientStreamManager.instance then
         AmbientStreamManager.instance = AmbientStreamManager:new()
         if AmbientStreamManager then
@@ -162,6 +163,8 @@ function RicksMLC_TreasureHuntMgrServer.OnServerStarted()
     else
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer.OnServerStarted(): AmbientStreamManager.instance already exists")
     end
+
+    -- Kick off the base class EveryOneMinuteAtStart to initialise this TreasureHuntMgr on the server.
     Events.EveryOneMinute.Add(RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart)
 end
 

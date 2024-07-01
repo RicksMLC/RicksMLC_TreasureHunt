@@ -235,37 +235,12 @@ function RicksMLC_TreasureHuntMgr:HandleOnHitZombie(zombie, character, bodyPartT
     --end
 end
 
--- FIXME: Move to mgr client
--- function RicksMLC_TreasureHuntMgr:MapItemGenerated(args)
---     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:MapItemGenerated")
---     if self.HitZombie then
---         DebugLog.log(DebugType.Mod, "    mapItem: " .. mapItem:getName())
---         self.HitZombie:addItemToSpawnAtDeath(args.mapItem)
---     end
---     self.HitZombie = nil
--- end
-
+function RicksMLC_TreasureHuntMgr:GetCurrentTreasureHuntInfo(treasureHuntNum)
+    return self.TreasureHunts[treasureHuntNum]:GetCurrentTreasureHuntInfo()
+end
 
 ------------------------------------------------------------
 -- Static methods
--- FIXME: Remove: These are in the derived classes for the mgr client and server
--- function RicksMLC_TreasureHuntMgr.OnClientCommand(moduleName, command, player, args)
---     if moduleName == "RicksMLC_TreasureHuntMgr" then
---         if command == "ClientOnHitZombie" then
---             RicksMLC_TreasureHuntMgr.Instance():HandleClientOnHitZombie(player, args)
---         end
---     end
--- end
-
--- function RicksMLC_TreasureHuntMgr.OnServerCommand(moduleName, command, args)
---     if moduleName == "RicksMLC_TreasureHuntMgr" then
---         if command == "MapItemGenerated" then
---             RicksMLC_TreasureHuntMgr.Instance():MapItemGenerated(args)
---         elseif command == "AddTreasureHunt" then
---             triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt")
---         end
---     end
--- end
 
 function RicksMLC_TreasureHuntMgr.OnHitZombie(zombie, character, bodyPartType, handWeapon)
     --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnHitZombie()")

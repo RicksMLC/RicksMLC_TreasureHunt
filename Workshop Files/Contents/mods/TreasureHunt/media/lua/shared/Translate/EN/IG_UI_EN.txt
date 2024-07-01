@@ -1,6 +1,9 @@
--- Rick's MLC Template
+-- Rick's MLC Treasure Hunt
 -- Encoding: UTF-8
 
 IGUI_EN {
-	IGUI_RicksMLC_TreasureHunt = "Template!",
+	IGUI_RicksMLC_TreasureHunt = "Ricks MLC Treasure Hunt",
+
+	IGUI_RicksMLC_TreasureHuntDialogName = "Ricks MLC Treasure Hunts",
+	
 },

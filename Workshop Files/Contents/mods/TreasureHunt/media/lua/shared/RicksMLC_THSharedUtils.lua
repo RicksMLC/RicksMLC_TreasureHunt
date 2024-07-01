@@ -1,8 +1,10 @@
-local function is_array(t)
+
+RicksMLC_THSharedUtils = {}
+
+function RicksMLC_THSharedUtils.is_array(t)
     return t ~= nil and type(t) == 'table' and t[1] ~= nil
 end
 
-RicksMLC_THSharedUtils = {}
 function RicksMLC_THSharedUtils.DumpArgs(args, lvl, desc)
     if not lvl then lvl = 0 end
     if lvl == 0 then
@@ -13,7 +15,7 @@ function RicksMLC_THSharedUtils.DumpArgs(args, lvl, desc)
     for i = 1, lvl do
         argIndent = argIndent .. "   "
     end
-    if is_array(args) then
+    if RicksMLC_THSharedUtils.is_array(args) then
         for idx, v in ipairs(args) do 
             local argStr = argIndent .. ' [' .. idx .. ']=' .. tostring(v) 
             DebugLog.log(DebugType.Mod, argStr)

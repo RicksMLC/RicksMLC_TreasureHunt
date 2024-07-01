@@ -537,6 +537,8 @@ function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie, doStash)
         end
     end
     local mapItem = self:GenerateNextMapItem(doStash)
+    self.ModData.Maps[self.ModData.CurrentMapNum].stashMapName = mapItem:getMapID()
+    self.ModData.Maps[self.ModData.CurrentMapNum].mapDisplayName = mapItem:getDisplayName()
     if zombie then
         -- This may be called in the server, where the zombie is not defined
         zombie:addItemToSpawnAtDeath(mapItem)
@@ -558,6 +560,19 @@ function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie, doStash)
     } 
     RicksMLC_THSharedUtils.DumpArgs(mapItemDetails, 0, "RicksMLC_TreasureHunt:AddNextMapToZombie() return:")
     return mapItemDetails
+end
+
+function RicksMLC_TreasureHunt:GetCurrentTreasureHuntInfo()
+    local modData = self.ModData.Maps[self.ModData.CurrentMapNum]
+    return {
+        name = self.Name,
+        huntId = self.HuntId, 
+        i = self.ModData.CurrentMapNum, 
+        lastSpawnedMapNum = self.ModData.LastSpawnedMapNum,
+        finished = self.ModData.Finished,
+        treasureHuntDefn = self.TreasureHuntDefn,
+        treasureModData = modData,
+        modData = self.ModData}
 end
 
 function RicksMLC_TreasureHunt:Dump()
