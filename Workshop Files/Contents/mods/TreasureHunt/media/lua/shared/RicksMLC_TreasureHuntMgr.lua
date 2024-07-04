@@ -40,6 +40,7 @@ function RicksMLC_TreasureHuntMgr:new()
 	self.__index = self
 
     o.Initialised = false
+    o.IsWaitingToHitZombie = false
 
     o.TreasureHunts = {}
 
@@ -111,7 +112,19 @@ end
 function RicksMLC_MapIDLookup:SetReadingMap(item) self.readingMapID = item end
 function RicksMLC_MapIDLookup:GetReadingMap() return self.Lookup[self.readingMapID] end
 
+function RicksMLC_MapIDLookup:GetMapLookup(mapId)
+    return self.Lookup[mapId]
+end
+
 -----------------------------------------
+
+function RicksMLC_TreasureHuntMgr:GetMgrStatus()
+    if self.IsWaitingToHitZombie then
+        return "Waiting to hit a zombie"
+    end
+    return ""
+end
+
 function RicksMLC_TreasureHuntMgr:GetMapPath()
     local mapLookup = RicksMLC_MapIDLookup.Instance():GetReadingMap()
     if not mapLookup then
@@ -189,6 +202,17 @@ function RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions(treasureHuntDefini
     end
 end
 
+function RicksMLC_TreasureHuntMgr:InitOnHitZombie()
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitOnHitZombie()")
+    for _, treasureHunt in ipairs(self.TreasureHunts) do
+        if treasureHunt:IsNewMapNeeded() then
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitOnHitZombie() SetOnHitZombieForNewMap()")
+            RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
+            return
+        end
+    end
+end
+
 function RicksMLC_TreasureHuntMgr:InitTreasureHunts()
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitTreasureHunts()")
     triggerEvent("RicksMLC_TreasureHuntMgr_PreInit")
@@ -197,6 +221,7 @@ function RicksMLC_TreasureHuntMgr:InitTreasureHunts()
         self.ModData.TreasureHuntDefinitions = {}
     else
         self:LoadTreasureHuntDefinitions(self.ModData.TreasureHuntDefinitions, true)
+        self:InitOnHitZombie()
     end
 end
 
@@ -232,11 +257,13 @@ function RicksMLC_TreasureHuntMgr:HandleOnHitZombie(zombie, character, bodyPartT
     for i, treasureHunt in ipairs(self.TreasureHunts) do
         treasureHunt:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon, true) -- doStash = true for non-client/server
     end
+    RicksMLC_TreasureHuntMgr.Instance():SetWaitingToHitZombie(false)
     --end
 end
 
 function RicksMLC_TreasureHuntMgr:GetCurrentTreasureHuntInfo(treasureHuntNum)
-    return self.TreasureHunts[treasureHuntNum]:GetCurrentTreasureHuntInfo()
+    local retInfo = self.TreasureHunts[treasureHuntNum]:GetCurrentTreasureHuntInfo()
+    return retInfo
 end
 
 ------------------------------------------------------------
@@ -263,6 +290,10 @@ function RicksMLC_TreasureHuntMgr.OnHitZombie(zombie, character, bodyPartType, h
     end
 end
 
+function RicksMLC_TreasureHuntMgr:RecordFoundTreasure(huntID, foundMapNum)
+    -- Do nothing in the base class.
+end
+
 function RicksMLC_TreasureHuntMgr.HandleTransferItemPerform()
     -- Check if the inventory now contains a Treasure from one of the treasure hunts.
     local needNewMap = false
@@ -286,11 +317,15 @@ function RicksMLC_TreasureHuntMgr.HandleTransferItemPerform()
     end
 end
 
+function RicksMLC_TreasureHuntMgr:SetWaitingToHitZombie(value)
+    self.IsWaitingToHitZombie = value
+end
+
 function RicksMLC_TreasureHuntMgr:ResetLostMaps()
     for _, treasureHunt in ipairs(RicksMLC_TreasureHuntMgr.Instance().TreasureHunts) do
         treasureHunt:ResetLastSpawnedMapNum()
     end
-    self:SetOnHitZombieForNewMap()
+    RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
 end
 
 function RicksMLC_TreasureHuntMgr:CheckIfNewMapNeeded()
@@ -300,6 +335,7 @@ end
 function RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
     Events.OnHitZombie.Remove(RicksMLC_TreasureHuntMgr.OnHitZombie)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap() Waiting to hit a zombie")
+    RicksMLC_TreasureHuntMgr.Instance():SetWaitingToHitZombie(true)
     Events.OnHitZombie.Add(RicksMLC_TreasureHuntMgr.OnHitZombie)
 end
 
@@ -308,13 +344,6 @@ function RicksMLC_TreasureHuntMgr.OnGameStart()
     Events.EveryOneMinute.Add(RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnGameStart end")
 end
-
--- FIXME: Moved to RicksMLC_TreasureHuntMgrServer
--- function RicksMLC_TreasureHuntMgr.OnServerStarted()
---     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnServerStarted start")
---     Events.EveryOneMinute.Add(RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart)
---     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.OnServerStarted end")
--- end
 
 local startCount = 0
 function RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart()

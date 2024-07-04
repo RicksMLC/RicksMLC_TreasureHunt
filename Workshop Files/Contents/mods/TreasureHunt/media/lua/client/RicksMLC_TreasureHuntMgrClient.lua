@@ -20,11 +20,12 @@ RicksMLC_Cache.ErrorCodes["Error3"] = "Cache item not found: "
 RicksMLC_Cache.ErrorCodes["Error4"] = "Cache is empty - no data."
 RicksMLC_Cache.ErrorCodes["Error5"] = "Cache is nil - no data."
 
-function RicksMLC_Cache:new(serverCommandModule, serverRequestCommand, serverResponseCommand)
+function RicksMLC_Cache:new(serverCommandModule, serverRequestCommand, serverResponseCommand, isList)
 	local o = {}
 	setmetatable(o, self)
 	self.__index = self
 
+    o.isList = isList
     o.isDirty = true
     o.idle = true
     o.waitingForData = false
@@ -35,7 +36,7 @@ function RicksMLC_Cache:new(serverCommandModule, serverRequestCommand, serverRes
     o.cache = {}
     o.error = nil
 
-    Events.OnServerCommand.Add(function(moduleName, command, args) RicksMLC_TreasureHuntMgrClient.Instance().serverCache:OnServerCommand(moduleName, command, args) end)
+    Events.OnServerCommand.Add(function(moduleName, command, args) RicksMLC_TreasureHuntMgrClient.Instance().serverTreasureHuntsCache:OnServerCommand(moduleName, command, args) end)
 
     return o
 end
@@ -43,7 +44,7 @@ end
 function RicksMLC_Cache:OnServerCommand(moduleName, command, args)
     DebugLog.log(DebugType.Mod, "RicksMLC_Cache:OnServerCommand '" .. command .. "' playerNum: " .. tostring(args.playerNum))
     if moduleName == "RicksMLC_Cache" then
-        if command == self.serverResponseCommand and args.playerNum == nil or args.playerNum == getPlayer():getPlayerNum() then
+        if command == self.serverResponseCommand and (args.playerNum == nil or args.playerNum == getPlayer():getPlayerNum()) then
             self:RefreshCache(args.data)
         end
     end
@@ -64,7 +65,7 @@ function RicksMLC_Cache:RefreshCache(data)
     self.waitingForData = false
     self.idle = true
     self.error = nil
-    triggerEvent("RicksMLC_CacheRefreshed", self.serverCommandModule) 
+    triggerEvent("RicksMLC_CacheRefreshed", self.serverCommandModule, self.serverRequestCommand, self.serverResponseCommand) 
 end
 
 function RicksMLC_Cache:GetLastError()
@@ -84,7 +85,7 @@ function RicksMLC_Cache:GetCachedData(index)
     elseif self.cache == nil then
         self.error = "Error5"
     elseif index == nil then
-        if #self.cache == 0 then
+        if self.isList and #self.cache == 0 then
             self.error = "Error4"
         else
             retList.data = self.cache
@@ -94,7 +95,7 @@ function RicksMLC_Cache:GetCachedData(index)
     else
         retList.data = self.cache[index]
     end
-    retList.error = RicksMLC_Cache.ErrorCodes[self.error]
+    retList.error = (self.error and RicksMLC_Cache.ErrorCodes[self.error] .. " " .. self.serverRequestCommand) or nil
     return retList
 end
 
@@ -119,8 +120,30 @@ function RicksMLC_TreasureHuntMgrClient:new()
 	self.__index = self
 
     o.HitZombie = nil
-    o.serverCache = RicksMLC_Cache:new("RicksMLC_TreasureHuntMgrServer", "RequestTreasureHuntsList", "SentTreasureHuntList")
+    o.serverTreasureHuntsCache = RicksMLC_Cache:new("RicksMLC_TreasureHuntMgrServer", "RequestTreasureHuntsList", "SentTreasureHuntList", true)
+    Events.OnServerCommand.Add(function(moduleName, command, args) o.serverTreasureHuntsCache:OnServerCommand(moduleName, command, args) end)
+
+    o.serverMgrStatusCache = RicksMLC_Cache:new("RicksMLC_TreasureHuntMgrServer", "RequestMgrServerStatus", "SentMgrServerStatus", false)
+    Events.OnServerCommand.Add(function(moduleName, command, args) o.serverMgrStatusCache:OnServerCommand(moduleName, command, args) end)
+
     return o
+end
+
+function RicksMLC_TreasureHuntMgrClient:GetMgrStatusFromServer()
+    local status = {text = "", error = nil}
+    if self.serverMgrStatusCache then
+        local cachedData = self.serverMgrStatusCache:GetCachedData()
+        if cachedData.error then
+            status.error = "Error: " .. cachedData.error
+        else
+            if cachedData.data.isWaitingToHitZombie then
+                status.text = "Waiting to hit zombie"
+            end
+        end
+    else
+        status.error = "serverMgrStatusCache not found"
+    end
+    return status
 end
 
 function RicksMLC_TreasureHuntMgrClient:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon)
@@ -134,6 +157,7 @@ function RicksMLC_TreasureHuntMgrClient:HandleOnHitZombie(zombie, character, bod
     local args = {zombie = zombie, character = character, bodyPartType = bodyPartType, handWeapon = handWeapon}
     RicksMLC_THSharedUtils.DumpArgs(args, 0, "Sending ClientOnHitZombie args")
     sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrServer", "ClientOnHitZombie", args)
+    self:SetWaitingToHitZombie(false)
 end
 
 function RicksMLC_TreasureHuntMgrClient:RecreateMapItem(mapItemDetails)
@@ -181,6 +205,12 @@ function RicksMLC_TreasureHuntMgrClient:HandleOnMapItemsGenerated(args)
     self.HitZombie = nil
 end
 
+function RicksMLC_TreasureHuntMgrClient:RecordFoundTreasure(huntId, foundMapNum)
+    -- Inform the server the treasure hunt item has been found.
+    local args = {huntId = huntId, mapNum = foundMapNum}
+    sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrServer", "RecordFoundTreasure", args)
+end
+
 function RicksMLC_TreasureHuntMgrClient:CheckAndSetOnHitZombie(clientTreasureHunt)
     local checkResult = clientTreasureHunt:CheckIfNewMapNeeded(getPlayer()) -- Note: This is a client-only function
     if checkResult.NewMapNeeded then
@@ -222,28 +252,50 @@ function RicksMLC_TreasureHuntMgrClient.OnServerCommand(moduleName, command, arg
 end
 
 function RicksMLC_TreasureHuntMgrClient:GetCachedTreasureHuntInfo(treasureHuntNum)
-    return self.serverCache:GetCachedData(treasureHuntNum)
+    return self.serverTreasureHuntsCache:GetCachedData(treasureHuntNum)
 end
 
 function RicksMLC_TreasureHuntMgrClient:GetAllCachedTreasureHuntInfo()
-    return self.serverCache:GetCachedData().data
+    return self.serverTreasureHuntsCache:GetCachedData()
 end
 
 function RicksMLC_TreasureHuntMgrClient:RefreshTreasureData()
-    self.serverCache:ForceCacheUpdate()
+    self.serverTreasureHuntsCache:ForceCacheUpdate()
 end
 
+function RicksMLC_TreasureHuntMgrClient:RefreshMgrServerStatus()
+    self.serverMgrStatusCache:ForceCacheUpdate()
+end
+
+
 function RicksMLC_TreasureHuntMgrClient.OnGameStart()
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.OnGameStart()")
+    local msg = "RicksMLC_TreasureHuntMgrClient.OnGameStart() Player# "
+    if getPlayer() then
+        msg = msg .. tostring(getPlayer():getPlayerNum())
+    else
+        msg = msg .. "nil"
+    end
+    DebugLog.log(DebugType.Mod, msg)
     RicksMLC_TreasureHuntMgr.Instance()
     triggerEvent("RicksMLC_TreasureHuntMgr_PreInit")
     -- TODO: Initialise the connection to the treasure hunt manager server side
+--    RicksMLC_TreasureHuntMgr.Instance().serverTreasureHuntsCache:ForceCacheUpdate()
+--    RicksMLC_TreasureHuntMgr.Instance().serverMgrStatusCache:ForceCacheUpdate()
 end
 
 function RicksMLC_TreasureHuntMgrClient.OnConnected()
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.OnConnected()")
+    local msg = "RicksMLC_TreasureHuntMgrClient.OnConnected() Player# "
+    if getPlayer() then
+        msg = msg .. tostring(getPlayer():getPlayerNum())
+    else
+        msg = msg .. "nil"
+    end
+    DebugLog.log(DebugType.Mod, msg)
+
     -- Does the initial synch happen here or OnGameStart?
-    sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrClient", "RequestTreasureHuntsInfo", {})
+    --sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrClient", "RequestTreasureHuntsInfo", {})
+    RicksMLC_TreasureHuntMgr.Instance().serverTreasureHuntsCache:ForceCacheUpdate()
+    RicksMLC_TreasureHuntMgr.Instance().serverMgrStatusCache:ForceCacheUpdate()
 end
 
 local function TreasureHuntMgrInitDone()

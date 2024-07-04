@@ -52,8 +52,14 @@ function RicksMLC_TreasureHuntMgrServer:RecreateMapItem(mapItemDetails)
     return mapItem
 end
 
+function RicksMLC_TreasureHuntMgrServer:SetWaitingToHitZombie(value)
+    RicksMLC_TreasureHuntMgr.SetWaitingToHitZombie(self, value)
+    self:SendMgrServerStatus(nil, nil)
+end
+
 function RicksMLC_TreasureHuntMgrServer.SetOnHitZombieForNewMap()
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer.SetOnHitZombieForNewMap() Server sending Waiting to hit a zombie")
+    self:SetWaitingToHitZombie(true)
     local args = {}
     sendServerCommand("RicksMLC_TreasureHuntMgr", "SetOnHitZombieForNewMap", args)
 end
@@ -89,11 +95,11 @@ function RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie(player, args)
     -- Server has received a message that the client has hit a zombie
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
 
+    self:SetWaitingToHitZombie(false)
     local mapItemList = self:CreateClientInitiatedMapItems(player, args)
     local replyArgs = {playerNum = player:getPlayerNum(), mapItemList = mapItemList}
     RicksMLC_THSharedUtils.DumpArgs(replyArgs, 0, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie() replyArgs")
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
-    --return replyArgs
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "MapItemsGenerated", replyArgs)
 end
 
@@ -118,8 +124,29 @@ function RicksMLC_TreasureHuntMgrServer:SendTreasureHuntInfo(player, args)
             thInfo[i] = treasureHunt:GetCurrentTreasureHuntInfo()
         end
     end
-    local args = {playerNum = player:getPlayerNum(), data = thInfo}
-    sendServerCommand(args.requestor, "SentTreasureHuntInfo", args)
+    local retArgs = {playerNum = player:getPlayerNum(), data = thInfo}
+    sendServerCommand(args.requestor, "SentTreasureHuntInfo", retArgs)
+end
+
+function RicksMLC_TreasureHuntMgrServer:SendMgrServerStatus(player, args)
+    -- if player is nil, send the message to all clients
+    local retArgs = {playerNum = (player and player:getPlayerNum()) or nil, data = {isWaitingToHitZombie = self.IsWaitingToHitZombie}}
+    --FIXME: Remove?  This msg can be sent without a request (ie when status changes) 
+    --sendServerCommand(args.requestor, "SentMgrServerStatus", retArgs)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:SendMgrServerStatus() player:" .. tostring(player) .. " retArgs player num:" .. tostring(retArgs.playerNum) .. " data: " .. tostring(retArgs.data.isWaitingToHitZombie))
+    sendServerCommand("RicksMLC_Cache", "SentMgrServerStatus", retArgs)
+end
+
+function RicksMLC_TreasureHuntMgrServer:RecordFoundTreasure(huntId, mapNum)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:RecordFoundTreasure() huntId:" .. tostring(huntId) )
+    if huntId > #self.TreasureHunts then
+        DebugLog.log(DebugType.Mod, "   huntId invalid:" .. tostring(#self.TreasureHunts))
+        return
+    end
+    self.TreasureHunts[huntId]:FinishOrSetNextMap()
+    if self.TreasureHunts[huntId]:IsNewMapNeeded() then
+        self:SetWaitingToHitZombie()
+    end
 end
 
 -------------------------------------
@@ -127,12 +154,16 @@ end
 
 function RicksMLC_TreasureHuntMgrServer.OnClientCommand(moduleName, command, player, args)
     -- Receive a message from a client
-    DebugLog.log(DebugType.Mod, 'RicksMLC_SpawnServer.OnClientCommand() ' .. moduleName .. "." .. command)
+    --DebugLog.log(DebugType.Mod, 'RicksMLC_TreasureHuntMgrServer.OnClientCommand() ' .. moduleName .. "." .. command)
     if moduleName ~= "RicksMLC_TreasureHuntMgrServer" then return end
 
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer.OnClientCommand: " .. moduleName .. ", " .. command)
     if command == "ClientOnHitZombie" then
         RicksMLC_TreasureHuntMgr.Instance():HandleClientOnHitZombie(player, args)
+        return
+    end
+    if command == "RecordFoundTreasure" then
+        RicksMLC_TreasureHuntMgr.Instance():RecordFoundTreasure(args.huntId, args.mapNum)
         return
     end
     if command == "RequestTreasureHuntsList" then
@@ -143,10 +174,13 @@ function RicksMLC_TreasureHuntMgrServer.OnClientCommand(moduleName, command, pla
         RicksMLC_TreasureHuntMgr.Instance():SendTreasureHuntInfo(player, args)
         return
     end
+    if command == "RequestMgrServerStatus" then
+        RicksMLC_TreasureHuntMgr.Instance():SendMgrServerStatus(player, args)
+        return
+    end
 end
 
 Events.OnClientCommand.Add(RicksMLC_TreasureHuntMgrServer.OnClientCommand)
-
 
 function RicksMLC_TreasureHuntMgrServer.OnServerStarted()
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer.OnServerStarted()")

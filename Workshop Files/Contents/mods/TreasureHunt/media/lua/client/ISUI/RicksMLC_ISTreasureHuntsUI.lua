@@ -62,28 +62,44 @@ function ISRicksMLC_TreasureHuntPanel:DrawArgList(name, arg, x, y, lineHeight)
     return y
 end
 
+local function dispTextLen(text, font)
+    return (text and getTextManager():MeasureStringX(font, text)) or 0
+end
+
 function ISRicksMLC_TreasureHuntPanel:DrawInvItemWithIcon(item, x, y, preLabel, postLabel)
     local tex = item:getTex()
     local iw = tex:getWidth()
     local ih = tex:getHeight()
-    local texX = x
+    local preLabelLen = dispTextLen(preLabel, UIFontSmall)
+    local postLabelLen = dispTextLen(postLabel, UIFontSmall)
+    local dispNameLen = dispTextLen(item:getDisplayName(), UIFontSmall)
     local textY = y + ih - FONT_HGT_SMALL
+    local texX = x + preLabelLen
+    local dispNameX = texX + iw + 10
+    local postX = dispNameX + dispNameLen
+    local endX = postX + postLabelLen
+    if x > self.xMargin + self.tab and endX > self:getWidth() - (self.xMargin + self.tab + self.xMargin) then
+        -- Is not the first thing on the line (x > xMargin + self.tab) and runs over the right margin.
+        y = y + ih + 2
+        x = self.xMargin + self.tab
+        textY = y + ih - FONT_HGT_SMALL
+        texX = x + preLabelLen
+        dispNameX = texX + iw + 10
+        postX = dispNameX + dispNameLen
+        endX = postX + postLabelLen
+    end
     if preLabel then
-        texX = x + getTextManager():MeasureStringX(UIFontSmall, preLabel)
         self:drawText(preLabel, x, textY, 1, 1, 1, 1, UIFont.NewSmall)
     end
     self:drawTexture(tex, texX , y, 1, 1, 1, 1) -- Tried ISUIElement:drawTextureScaled(texture, x, y, w, h, a, r, g, b) to enlarge, looks too chunky when scaled
-    local dispNameX = texX + iw + 10
     self:drawText(item:getDisplayName(), dispNameX, textY, 1, 1, 1, 1, UIFont.NewSmall)
-    x = dispNameX + getTextManager():MeasureStringX(UIFontSmall, item:getDisplayName())
     if postLabel then
-        self:drawText(postLabel, x, textY, 1, 1, 1, 1)
-        x = x + getTextManager():MeasureStringX(UIFontSmall, postLabel)
+        self:drawText(postLabel, postX, textY, 1, 1, 1, 1)
     end
-    return x, ih
+    return endX, y, ih
 end
 
-function ISRicksMLC_TreasureHuntPanel:DrawItemsWithIcon(label, items, x, y, isOneLine)
+function ISRicksMLC_TreasureHuntPanel:DrawItemsWithIcon(label, items, x, y)
     if not (isTable(items) and #items > 0) then return end
 
     local preLable = label
@@ -93,15 +109,10 @@ function ISRicksMLC_TreasureHuntPanel:DrawItemsWithIcon(label, items, x, y, isOn
     for i, item in ipairs(items) do
         local invItem = InventoryItemFactory.CreateItem(item)
         if invItem then
-            newX, ih = self:DrawInvItemWithIcon(invItem, x, y, preLabel, postLabel)
-            if isOneLine then
-                x = newX
-            else
-                y = y + ih + 2
-            end
+            x, y, ih = self:DrawInvItemWithIcon(invItem, x, y, preLabel, postLabel)
         end
     end
-    return (isOneLine and (y + ih + 2)) or y
+    return y + ih + 2
 end
 
 function ISRicksMLC_TreasureHuntPanel:DrawTreasureItems(treasures, x, y)
@@ -119,7 +130,7 @@ function ISRicksMLC_TreasureHuntPanel:DrawTreasureItems(treasures, x, y)
     return y
 end
 
-function ISRicksMLC_TreasureHuntPanel:DrawTreasureHuntDefn(treasureHuntDefn, x, y, xMargin, tab, lineHeight)
+function ISRicksMLC_TreasureHuntPanel:DrawTreasureHuntDefn(treasureHuntDefn, x, y, lineHeight)
     -- Barricades
     -- Decorators
     -- Name
@@ -127,7 +138,7 @@ function ISRicksMLC_TreasureHuntPanel:DrawTreasureHuntDefn(treasureHuntDefn, x, 
     -- Zombies
     self:drawText("treasureHuntDefn:", x, y, 1, 1, 1, 1, UIFont.NewSmall)
     y = y + lineHeight
-    x = xMargin + tab
+    x = self.xMargin + self.tab
     for k, v in pairs(treasureHuntDefn) do
         if k == "Treasures" then
             y = self:DrawTreasureItems(v, x, y)
@@ -154,9 +165,7 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
     ISPanel.prerender(self)
 
     local yOffset = 0
-    local xMargin = 10
-    local x = xMargin
-    local tab = 10
+    local x = self.xMargin
     -- ISPanel background will draw the border
     
     if self.treasureHuntInfo and self.treasureHuntInfo.error == nil then
@@ -175,12 +184,12 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
         -- treasureModData.Treasure is the internal name (type()) of the treasure item
         y = y + lineHeight
         if self.treasureHuntInfo.treasureHuntDefn then
-            y = self:DrawTreasureHuntDefn(self.treasureHuntInfo.treasureHuntDefn, x, y, xMargin, tab, lineHeight)
+            y = self:DrawTreasureHuntDefn(self.treasureHuntInfo.treasureHuntDefn, x, y, lineHeight)
         end
         if self.treasureHuntInfo.treasureModData then
             self:drawText("treasureModData:", x, y, 1, 1, 1, 1, UIFont.NewSmall)
             y = y + lineHeight
-            x = xMargin + tab
+            x = self.xMargin + self.tab
             for k, v in pairs(self.treasureHuntInfo.treasureModData) do
                 if k == "Treasure" then
                     local treaureItem = nil
@@ -192,14 +201,7 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
                         treasureItem = InventoryItemFactory.CreateItem(self.treasureHuntInfo.treasureModData.Treasure)
                     end
                     if treasureItem then
-                        local tex = treasureItem:getTex()
-                        local iw = tex:getWidth()
-                        local ih = tex:getHeight()
-                        local texX = x + getTextManager():MeasureStringX(UIFontSmall, k .. ": ")
-                        local textY = y + ih - FONT_HGT_SMALL
-                        self:drawText(k .. ": ", x, textY, 1, 1, 1, 1, UIFont.NewSmall)
-                        self:drawTexture(tex, texX , y, 1, 1, 1, 1) -- Tried ISUIElement:drawTextureScaled(texture, x, y, w, h, a, r, g, b) to enlarge, looks too chunky when scaled
-                        self:drawText(treasureItem:getDisplayName(), texX + iw + 10, textY, 1, 1, 1, 1, UIFont.NewSmall)
+                        _, y, ih = self:DrawInvItemWithIcon(treasureItem, x, y, k .. ": ", nil)
                         y = y + ih + 2
                     end        
                 else
@@ -215,7 +217,7 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
                     y = y + lineHeight
                 end
             end
-            x = xMargin
+            x = self.xMargin + self.tab
         else
             -- treasureModData does not exist yet, so the treasure map has not been generated yet.
             self:drawText("No treasureModData - map not generated yet?", x, y, 1, 1, 1, 1, UIFont.NewSmall)
@@ -229,13 +231,12 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
 
 end
 
-local n = 0
 function ISRicksMLC_TreasureHuntPanel:SetTreasureHunt(treasureHuntInfo)
-    self.treasureHuntInfo = treasureHuntInfo
-    if n < 1 then
-        RicksMLC_THSharedUtils.DumpArgs(self.treasureHuntInfo, 0, "ISRicksMLC_TreasureHuntPanel:prerender() self.TreasureHuntInfo")
-        n = n + 1
+    if not treasureHuntInfo then
+        DebugLog.log(DebugType.Mod, "ISRicksMLC_TreasureHuntPanel:SetTreasureHunt() nil")
+        return
     end
+    self.treasureHuntInfo = treasureHuntInfo
 end
 
 function ISRicksMLC_TreasureHuntPanel:new(x, y, width, height, owner)
@@ -249,6 +250,8 @@ function ISRicksMLC_TreasureHuntPanel:new(x, y, width, height, owner)
     o.owner = owner
     o.treasureHuntNum = nil
     o.treasureHuntInfo = nil
+    o.xMargin = 10
+    o.tab = 6
     return o;  
 end
 
@@ -259,6 +262,8 @@ end
 function ISRicksMLC_TreasureHuntsUI:initialise()
     ISCollapsableWindow.initialise(self);
     self.title = getText("IGUI_RicksMLC_TreasureHuntDialogName")
+    self.minimumWidth = 800
+    self.minimumHeight = 650
 end
 
 function ISRicksMLC_TreasureHuntsUI:createChildren()
@@ -336,17 +341,21 @@ end
 
 function ISRicksMLC_TreasureHuntsUI:ShowSystemMsg()
     local z = self.height - (FONT_HGT_SMALL*2)
-    self:drawText(self.systemMsg, 10, z, 1, 1, 1, 1, UIFont.NewSmall)
+    self:drawText(self.systemMsg .. (self.systemErrMsg and ". " .. self.systemErrMsg or ""), 10, z, 1, 1, 1, 1, UIFont.NewSmall)
 end
 
 function ISRicksMLC_TreasureHuntsUI:GetWindowTitle()
-    return getText("IGUI_RicksMLC_TreasureHuntDialogName") .. (isClient() and " - Client" or "")
+    local windowTitle = getText("IGUI_RicksMLC_TreasureHuntDialogName") .. (isClient() and " - Client" or "")
+    windowTitle = windowTitle .. " " .. RicksMLC_TreasureHuntMgr.Instance():GetMgrStatus() 
+    return windowTitle
 end
 
 function ISRicksMLC_TreasureHuntsUI:prerender()
     local z = 20;
     local splitPoint = 100;
     local x = 10;
+
+    self:SetSystemErrMsg("")
     
     self:drawRect(0, 0, self.width, self.height, self.backgroundColor.a, self.backgroundColor.r, self.backgroundColor.g, self.backgroundColor.b);
     self:drawRectBorder(0, 0, self.width, self.height, self.borderColor.a, self.borderColor.r, self.borderColor.g, self.borderColor.b);
@@ -356,14 +365,10 @@ function ISRicksMLC_TreasureHuntsUI:prerender()
     z = z + 30;
 
     -- Show the window size at the bottom left.
-    --local wSizeTxt = "Window size: " .. tostring(self.height) .. ", " .. tostring(self.width)
+    self:SetSystemMsg("Window size: " .. tostring(self.height) .. ", " .. tostring(self.width))
     self:ShowSystemMsg()
 end
 
---************************************************************************--
---** ISFactionAddPlayerUI:new
---**
---************************************************************************--
 function ISRicksMLC_TreasureHuntsUI:new(x, y, width, height)
     local o = ISCollapsableWindow:new(x, y, width, height)
     setmetatable(o, self)
@@ -382,11 +387,15 @@ function ISRicksMLC_TreasureHuntsUI:new(x, y, width, height)
     o.height = height
     o.moveWithMouse = true
     o.systemMsg = ""
+    o.systemErrMsg = ""
     return o;
 end
 
 function ISRicksMLC_TreasureHuntsUI:SetSystemMsg(msg)
     self.systemMsg = msg
+end
+function ISRicksMLC_TreasureHuntsUI:SetSystemErrMsg(msg)
+    self.systemErrMsg = msg
 end
 
 function ISRicksMLC_TreasureHuntsUI:close()
@@ -424,6 +433,12 @@ ISRicksMLC_TreasureHuntsServerUI.refreshTexture = getTexture("media/ui/refresh-y
 
 function ISRicksMLC_TreasureHuntsServerUI:GetWindowTitle()
     local windowTitle = getText("IGUI_RicksMLC_TreasureHuntDialogName") .. " - Server"
+    local status = RicksMLC_TreasureHuntMgrClient.Instance():GetMgrStatusFromServer()
+    if status.error then
+        self:SetSystemErrMsg(status.error)
+    else
+        windowTitle = windowTitle .. " " .. status.text
+    end
     return windowTitle
 end
 
@@ -431,7 +446,7 @@ end
 function ISRicksMLC_TreasureHuntsServerUI:GetInfoFromMgr(treasureHuntNum)
     local cachedData = RicksMLC_TreasureHuntMgrClient.Instance():GetCachedTreasureHuntInfo(treasureHuntNum)
     if not cachedData.data then
-        self:SetSystemMsg(cachedData.error)
+        self:SetSystemErrMsg(cachedData.error)
         return nil
     end
     return cachedData.data
@@ -439,17 +454,24 @@ end
 
 function ISRicksMLC_TreasureHuntsServerUI:RequestUpdateFromServer()
     RicksMLC_TreasureHuntMgrClient.Instance():RefreshTreasureData()
+    RicksMLC_TreasureHuntMgrClient.Instance():RefreshMgrServerStatus()
     self.refreshServerListButton:setEnable(false)
     self:populateList() -- clear the list
 end
 
-function ISRicksMLC_TreasureHuntsServerUI:CacheRefreshed()
+function ISRicksMLC_TreasureHuntsServerUI:CacheRefreshed(cmdModule, requestCmd, responseCmd)
+    if responseCmd == "SentTreasureHuntList" then
     local cachedData = RicksMLC_TreasureHuntMgrClient.Instance():GetAllCachedTreasureHuntInfo()
     if not cachedData.data then
-        self:SetSystemMsg(cachedData.error)
+            self:SetSystemErrMsg(cachedData.error)
     end
     self:populateList(cachedData.data)
     self.waitingForServerList = false
+        return
+    end
+    if responseCmd == "SentMgrServerStatus" then
+        -- Nothing to be done?
+    end
     self.refreshServerListButton:setEnable(true)
 end
 
@@ -511,6 +533,7 @@ function ISRicksMLC_TreasureHuntsServerUI.openWindow()
     ISRicksMLC_TreasureHuntsServerUI.serverInstance:initialise()
     ISRicksMLC_TreasureHuntsServerUI.serverInstance:addToUIManager()
     --FIXME: Remove ISLayoutManager.RegisterWindow('ISRicksMLC_TreasureHuntsServerUI', ISRicksMLC_TreasureHuntsServerUI, ISRicksMLC_TreasureHuntsServerUI.serverInstance)
+    Events.RicksMLC_CacheRefreshed.Remove(function() ISRicksMLC_TreasureHuntsServerUI.serverInstance:CacheRefreshed() end)
     Events.RicksMLC_CacheRefreshed.Add(function() ISRicksMLC_TreasureHuntsServerUI.serverInstance:CacheRefreshed() end)
 end
 
@@ -520,8 +543,6 @@ function ISRicksMLC_TreasureHuntsServerUI:close()
     self:removeFromUIManager()
     ISRicksMLC_TreasureHuntsServerUI.serverInstance = nil
 end
-
---Events.OnServerCommand.Add(ISRicksMLC_TreasureHuntsServerUI.OnServerCommand)
 
 ------------------------------------------------------------
 

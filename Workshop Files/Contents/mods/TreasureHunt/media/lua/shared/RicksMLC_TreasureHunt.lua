@@ -388,6 +388,22 @@ function RicksMLC_TreasureHunt:GeneratePastTreasures()
         if not RicksMLC_TreasureHuntDistributions.Instance():IsInDistribution(self:GenerateMapName(i)) then
             RicksMLC_TreasureHuntDistributions.Instance():AddSingleTreasureToDistribution(self.Treasures[i], self:GenerateMapName(i))
         end
+        -- FIXME: Temp workaround for missing stashMap data not stored in the ModData (experimental)
+        if not treasureModData.stashMapName then
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GeneratePastTreasures() missing stashMapName '".. treasureModData.stashMapName .. "'  Restoring")
+            treasureModData.stashMapName = self:GenerateMapName(i)
+        end
+        if isClient() or not isServer() then
+            if not LootMaps.Init[treasureModData.stashMapName] then
+                DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GeneratePastTreasures() missing LootMaps.Init[".. treasureModData.stashMapName .. "].  Restoring")
+                LootMaps.Init[treasureModData.stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
+            end
+        end
+        local mapLookup = RicksMLC_MapIDLookup.Instance():GetMapLookup(treasureModData.stashMapName)
+        if not mapLookup then
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GeneratePastTreasures() missing RicksMLC_MapIDLookup('".. treasureModData.stashMapName .."').  Restoring")
+            RicksMLC_MapIDLookup.Instance():AddMapID(treasureModData.stashMapName, self.HuntId, i)
+        end
     end
 end
 
@@ -548,6 +564,7 @@ function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie, doStash)
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddNextMapToZombie(): WARNING Buiding already visited for map " .. mapItem:getName())
         return nil
     end
+    self:SaveModData()
     local mapItemDetails = {
         mapItem = mapItem,
         stashMapName = mapItem:getMapID(), 
@@ -569,6 +586,7 @@ function RicksMLC_TreasureHunt:GetCurrentTreasureHuntInfo()
         huntId = self.HuntId, 
         i = self.ModData.CurrentMapNum, 
         lastSpawnedMapNum = self.ModData.LastSpawnedMapNum,
+        isNewMapNeeded = self:IsNewMapNeeded(),
         finished = self.ModData.Finished,
         treasureHuntDefn = self.TreasureHuntDefn,
         treasureModData = modData,
@@ -615,15 +633,26 @@ local function matchAnyTreasureClosure(x, obj)
     return false
 end
 
-function RicksMLC_TreasureHunt:RecordFoundTreasure(item)
-    item:getModData()["RicksMLC_Treasure"] = self:GenerateMapName(self.ModData.CurrentMapNum)
+function RicksMLC_TreasureHunt:FinishOrSetNextMap()
     self.ModData.Maps[self.ModData.CurrentMapNum].Found = true
     if self.ModData.CurrentMapNum == #self.Treasures then
         self:FinishHunt()
     else
         self.ModData.CurrentMapNum = self.ModData.CurrentMapNum + 1
-        self:SaveModData()
     end
+    self:SaveModData()
+end
+
+function RicksMLC_TreasureHunt:RecordFoundTreasure(item)
+    local foundMapNum = self.ModData.CurrentMapNum
+    -- Record the item as a found treasure item so it can't be used again.
+    item:getModData()["RicksMLC_Treasure"] = self:GenerateMapName(self.ModData.CurrentMapNum)
+    self:FinishOrSetNextMap()
+    RicksMLC_TreasureHuntMgr.Instance():RecordFoundTreasure(self.HuntId, foundMapNum)
+end
+
+function RicksMLC_TreasureHunt:IsNewMapNeeded()
+    return not self.Finished and (self.ModData.CurrentMapNum == 0 or self.ModData.CurrentMapNum > self.ModData.LastSpawnedMapNum)
 end
 
 function RicksMLC_TreasureHunt:CheckIfNewMapNeeded(player)
