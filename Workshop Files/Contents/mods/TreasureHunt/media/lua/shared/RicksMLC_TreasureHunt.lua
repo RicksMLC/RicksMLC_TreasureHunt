@@ -390,13 +390,13 @@ function RicksMLC_TreasureHunt:GeneratePastTreasures()
         end
         -- FIXME: Temp workaround for missing stashMap data not stored in the ModData (experimental)
         if not treasureModData.stashMapName then
-            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GeneratePastTreasures() missing stashMapName '".. treasureModData.stashMapName .. "'  Restoring")
             treasureModData.stashMapName = self:GenerateMapName(i)
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GeneratePastTreasures() missing stashMapName '".. treasureModData.stashMapName .. "'  Restoring")
         end
         if isClient() or not isServer() then
             if not LootMaps.Init[treasureModData.stashMapName] then
-                DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GeneratePastTreasures() missing LootMaps.Init[".. treasureModData.stashMapName .. "].  Restoring")
                 LootMaps.Init[treasureModData.stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
+                DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GeneratePastTreasures() missing LootMaps.Init[".. treasureModData.stashMapName .. "].  Restoring")
             end
         end
         local mapLookup = RicksMLC_MapIDLookup.Instance():GetMapLookup(treasureModData.stashMapName)
