@@ -174,7 +174,7 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
         -- self.treasureHuntInfo:
         -- {name = self.Name, huntId = self.HuntId, i = self.ModData.CurrentMapNum, finished = self.ModData.Finished,  tresureHuntDefn = self.TreasureHuntDefn, treasureModData = modData, modData = self.ModData}
 
-        local thText = "Treasure Hunt " .. tostring(self.treasureHuntInfo.huntId) .. ": " .. self.treasureHuntInfo.name .. (self.treasureHuntInfo.finished and "(finished)" or "(active)")
+        local thText = "Treasure Hunt " .. tostring(self.treasureHuntInfo.huntId) .. ": " .. self.treasureHuntInfo.Name .. (self.treasureHuntInfo.finished and "(finished)" or "(active)")
 
         self:drawText(thText, self.width/2 - (getTextManager():MeasureStringX(UIFont.NewSmall, thText) / 2), yOffset, 1, 1, 1, 1, UIFont.NewSmall)
         y = y + lineHeight
@@ -186,6 +186,10 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
         if self.treasureHuntInfo.treasureHuntDefn then
             y = self:DrawTreasureHuntDefn(self.treasureHuntInfo.treasureHuntDefn, x, y, lineHeight)
         end
+
+        self:drawText("Restrict to user: " .. (self.treasureHuntInfo.RestrictMapForUserName or "none"), x, y, 1, 1, 1, 1, UIFont.NewSmall)
+        y = y + lineHeight
+
         if self.treasureHuntInfo.treasureModData then
             self:drawText("treasureModData:", x, y, 1, 1, 1, 1, UIFont.NewSmall)
             y = y + lineHeight
@@ -311,7 +315,7 @@ function ISRicksMLC_TreasureHuntsUI:populateList(treasureHuntList)
     for i, treasureHunt in ipairs(treasureHuntList) do
         local displayName = treasureHunt.Name
         local treasureHuntInfo = {};
-        treasureHuntInfo.name = treasureHunt.Name;
+        treasureHuntInfo.name = treasureHunt.Name
         treasureHuntInfo.tooltip = "foo"
         treasureHuntInfo.treasureHuntNum = i
         local index = self.treasureHuntsListBox:addItem(displayName, treasureHuntInfo);
@@ -459,20 +463,22 @@ function ISRicksMLC_TreasureHuntsServerUI:RequestUpdateFromServer()
     self:populateList() -- clear the list
 end
 
-function ISRicksMLC_TreasureHuntsServerUI:CacheRefreshed(cmdModule, requestCmd, responseCmd)
+function ISRicksMLC_TreasureHuntsServerUI.CacheRefreshed(cmdModule, requestCmd, responseCmd)
+    if not ISRicksMLC_TreasureHuntsServerUI.serverInstance then return end
+    
     if responseCmd == "SentTreasureHuntList" then
-    local cachedData = RicksMLC_TreasureHuntMgrClient.Instance():GetAllCachedTreasureHuntInfo()
-    if not cachedData.data then
-            self:SetSystemErrMsg(cachedData.error)
-    end
-    self:populateList(cachedData.data)
-    self.waitingForServerList = false
+        local cachedData = RicksMLC_TreasureHuntMgrClient.Instance():GetAllCachedTreasureHuntInfo()
+        if not cachedData.data then
+            ISRicksMLC_TreasureHuntsServerUI.serverInstance:SetSystemErrMsg(cachedData.error)
+        end
+        ISRicksMLC_TreasureHuntsServerUI.serverInstance:populateList(cachedData.data)
+        ISRicksMLC_TreasureHuntsServerUI.serverInstance.waitingForServerList = false
         return
     end
     if responseCmd == "SentMgrServerStatus" then
         -- Nothing to be done?
     end
-    self.refreshServerListButton:setEnable(true)
+    ISRicksMLC_TreasureHuntsServerUI.serverInstance.refreshServerListButton:setEnable(true)
 end
 
 function ISRicksMLC_TreasureHuntsServerUI:ReceiveTreasureHuntInfoFromServer(args)
@@ -533,12 +539,12 @@ function ISRicksMLC_TreasureHuntsServerUI.openWindow()
     ISRicksMLC_TreasureHuntsServerUI.serverInstance:initialise()
     ISRicksMLC_TreasureHuntsServerUI.serverInstance:addToUIManager()
     --FIXME: Remove ISLayoutManager.RegisterWindow('ISRicksMLC_TreasureHuntsServerUI', ISRicksMLC_TreasureHuntsServerUI, ISRicksMLC_TreasureHuntsServerUI.serverInstance)
-    Events.RicksMLC_CacheRefreshed.Remove(function() ISRicksMLC_TreasureHuntsServerUI.serverInstance:CacheRefreshed() end)
-    Events.RicksMLC_CacheRefreshed.Add(function() ISRicksMLC_TreasureHuntsServerUI.serverInstance:CacheRefreshed() end)
+    Events.RicksMLC_CacheRefreshed.Remove(ISRicksMLC_TreasureHuntsServerUI.CacheRefreshed)
+    Events.RicksMLC_CacheRefreshed.Add(ISRicksMLC_TreasureHuntsServerUI.CacheRefreshed)
 end
 
 function ISRicksMLC_TreasureHuntsServerUI:close()
-    Events.RicksMLC_CacheRefreshed.Remove(function() ISRicksMLC_TreasureHuntsServerUI.serverInstance:CacheRefreshed() end)
+    Events.RicksMLC_CacheRefreshed.Remove(ISRicksMLC_TreasureHuntsServerUI.CacheRefreshed)
     ISCollapsableWindow.close(self)
     self:removeFromUIManager()
     ISRicksMLC_TreasureHuntsServerUI.serverInstance = nil

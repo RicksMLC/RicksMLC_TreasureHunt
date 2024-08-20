@@ -25,7 +25,7 @@ LuaEventManager.AddEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt")
 
 RicksMLC_TreasureHuntMgr = ISBaseObject:derive("RicksMLC_TreasureHuntMgr");
 
-RicksMLC_TreasureHuntMgrInstance = nil
+RicksMLC_TreasureHuntMgrInstance = RicksMLC_TreasureHuntMgrInstance or nil
 
 function RicksMLC_TreasureHuntMgr.Instance()
     if not RicksMLC_TreasureHuntMgrInstance then
@@ -176,21 +176,25 @@ function RicksMLC_TreasureHuntMgr:UpdateTreasureHuntDefns(treasureHuntDefn)
     self:SaveModData()
 end
 
+function RicksMLC_TreasureHuntMgr:NewTreasureHunt(treasureHuntDefn, huntId)
+    return RicksMLC_TreasureHunt:new(treasureHuntDefn, huntId)
+end
+
 -- Treasure Hunt Definitions: { Name = string, Barricades = {min, max} | n, Zombies = {min, max} | n, Treasures = {string, string...}, Town = nil | string), Decorators = nil | {[n] = DecoratorName} }
 -- Decorators: The DecoratorName is the name given to the registered decorator.  
 --             The index to the decorator corresponds with the treasure item so a unique decorator can be assigned
---             to each treaure.
+--             to each treasure.
 function RicksMLC_TreasureHuntMgr:AddTreasureHunt(treasureHuntDefn, isFromModData)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:AddTreasureHunt() '" .. treasureHuntDefn.Name .. "'")
     if self:IsDuplicate(treasureHuntDefn, self.TreasureHunts) then return end
 
-    self.TreasureHunts[#self.TreasureHunts+1] = RicksMLC_TreasureHunt:new(treasureHuntDefn, #self.TreasureHunts+1)
+    self.TreasureHunts[#self.TreasureHunts+1] = self:NewTreasureHunt(treasureHuntDefn, #self.TreasureHunts+1)
     self.TreasureHunts[#self.TreasureHunts]:InitTreasureHunt()
 
     if not isFromModData then 
         -- Avoid infinite loop/leak by not adding to the ModData
         self:UpdateTreasureHuntDefns(treasureHuntDefn)
     end
-    triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt", self.TreasureHunts[#self.TreasureHunts])
     return self.TreasureHunts[#self.TreasureHunts] -- return the generated treasure hunt
 end
 
@@ -198,17 +202,20 @@ function RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions(treasureHuntDefini
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions()")
     for i, treasureHuntDefn in ipairs(treasureHuntDefinitions) do
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions() '" .. treasureHuntDefn.Name .. "'")
-        self:AddTreasureHunt(treasureHuntDefn, isFromModData)
+        local treasureHunt = self:AddTreasureHunt(treasureHuntDefn, isFromModData)
+        -- FIXME: Remove: triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt", treasureHunt)
+        -- replace with self:InitOnHitZombie() after the loop
     end
+    self:InitOnHitZombie()
 end
 
 function RicksMLC_TreasureHuntMgr:InitOnHitZombie()
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitOnHitZombie()")
     for _, treasureHunt in ipairs(self.TreasureHunts) do
         if treasureHunt:IsNewMapNeeded() then
-            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitOnHitZombie() SetOnHitZombieForNewMap()")
-            RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
-            return
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitOnHitZombie() call SetOnHitZombieForNewMap()")
+            -- TODO: MP: Check this is the correct player
+            self:SetOnHitZombieForNewMap(treasureHunt)
         end
     end
 end
@@ -246,13 +253,6 @@ function RicksMLC_TreasureHuntMgr:LoadSampleTreasureHunts()
 end
 
 function RicksMLC_TreasureHuntMgr:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon)
-    -- Note: OnHitZombie is a client-side event, so no need to check for not isServer()
-    -- if not isServer() and isClient() then
-    --     -- Send the OnHitZombie message to the server
-    --     local args = {zombie = zombie, character = character, bodyPartType = bodyPartType, handWeapon = handWeapon}
-    --     sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgr", "ClientOnHitZombie", args)
-    --     self.HitZombie = zombie
-    -- else
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.HandleOnHitZombie()")
     for i, treasureHunt in ipairs(self.TreasureHunts) do
         treasureHunt:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon, true) -- doStash = true for non-client/server
@@ -298,8 +298,12 @@ function RicksMLC_TreasureHuntMgr.HandleTransferItemPerform()
     -- Check if the inventory now contains a Treasure from one of the treasure hunts.
     local needNewMap = false
     local possibleItems = {}
+    local neededNewMaps = {}
     for _, treasureHunt in ipairs(RicksMLC_TreasureHuntMgr.Instance().TreasureHunts) do
         local checkResult = treasureHunt:CheckIfNewMapNeeded(getPlayer())
+        if checkResult.NewMapNeeded then
+            neededNewMaps[#neededNewMaps+1] = treasureHunt
+        end
         needNewMap = checkResult.NewMapNeeded or needNewMap
         if #checkResult.UnassignedItems > 0 then
             for _, unassignedItem in ipairs(checkResult.UnassignedItems) do
@@ -313,29 +317,33 @@ function RicksMLC_TreasureHuntMgr.HandleTransferItemPerform()
         end
     end
     if needNewMap then 
-        RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
+        -- TODO: MP: Check this is the correct player: This is correct for SP and MP as it is checking the player inventory.
+        for _, treasureHunt in ipairs(neededNewMaps) do
+            RicksMLC_TreasureHuntMgr.Instance():SetOnHitZombieForNewMap(treasureHunt)
+        end
     end
 end
 
-function RicksMLC_TreasureHuntMgr:SetWaitingToHitZombie(value)
+function RicksMLC_TreasureHuntMgr:SetWaitingToHitZombie(value, treasureHunt)
     self.IsWaitingToHitZombie = value
 end
 
 function RicksMLC_TreasureHuntMgr:ResetLostMaps()
+    -- TODO: MP: Check this is the correct player
     for _, treasureHunt in ipairs(RicksMLC_TreasureHuntMgr.Instance().TreasureHunts) do
         treasureHunt:ResetLastSpawnedMapNum()
+        self:SetOnHitZombieForNewMap(treasureHunt)
     end
-    RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
 end
 
 function RicksMLC_TreasureHuntMgr:CheckIfNewMapNeeded()
     --FIXME: Muiltiplayer Code.  Needs implementing.  No effect in SP for now.
 end
 
-function RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
+function RicksMLC_TreasureHuntMgr:SetOnHitZombieForNewMap(treasureMap)
     Events.OnHitZombie.Remove(RicksMLC_TreasureHuntMgr.OnHitZombie)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap() Waiting to hit a zombie")
-    RicksMLC_TreasureHuntMgr.Instance():SetWaitingToHitZombie(true)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:SetOnHitZombieForNewMap() Waiting to hit a zombie")
+    self:SetWaitingToHitZombie(true, treasureMap)
     Events.OnHitZombie.Add(RicksMLC_TreasureHuntMgr.OnHitZombie)
 end
 
@@ -356,10 +364,10 @@ function RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart()
 end
 
 function RicksMLC_TreasureHuntMgr:HandleOnAddTreasureHunt(newTreasureHunt)
-    -- Override this on the serve and client.
+    -- Override this on the server and client.
     local checkResult = newTreasureHunt:CheckIfNewMapNeeded(getPlayer()) -- Note: This is a client-only function
     if checkResult.NewMapNeeded then
-        RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
+        self:SetOnHitZombieForNewMap(newTreasureHunt)
     end
 end
 
