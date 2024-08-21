@@ -16,8 +16,7 @@
 -- Normally this would be a hard-coded definition of the map boundaries so the UI can display that co-ordinate bounds of the map.  In order
 -- to make a general-purpose function which uses the treasureModData to look up the required details for the map it is
 -- assigned as LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn where stashMapName = GenerateMapName(self.ModData.CurrentMapNum)
--- The MapDefnFn looks up the currently read map and loads the
--- bounds for the map from the lookup.
+-- The MapDefnFn looks up the currently read map and loads the bounds for the map from the lookup.
 --
 -- Spawning the stash map:  The map is spawned with the followng sequence:
 --     local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")

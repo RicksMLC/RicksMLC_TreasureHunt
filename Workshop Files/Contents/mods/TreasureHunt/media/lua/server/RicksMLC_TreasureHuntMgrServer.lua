@@ -27,7 +27,7 @@ DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer: Server code used")
 
 require "RicksMLC_TreasureHuntMgr"
 
-RicksMLC_TreasureHuntMgrServer = RicksMLC_TreasureHuntMgr:derive("RicksMLC_TreasureHuntMgrServer");
+RicksMLC_TreasureHuntMgrServer = RicksMLC_TreasureHuntMgr:derive("RicksMLC_TreasureHuntMgrServer")
 
 -- Override the base class Instance() so any calls on the server will use the server version.
 function RicksMLC_TreasureHuntMgr.Instance()
@@ -39,39 +39,56 @@ function RicksMLC_TreasureHuntMgr.Instance()
 end
 
 function RicksMLC_TreasureHuntMgrServer:new()
-    local this = RicksMLC_TreasureHuntMgr.new(self)
-    return this
+    local o = RicksMLC_TreasureHuntMgr.new(self)
+    setmetatable(o, self)
+    self.__index = self
+
+    o.tempRestrictToPlayer = nil
+
+    return o
 end
+
+-- Create a TreasureHuntServer object for the server mgr
+function RicksMLC_TreasureHuntMgrServer:NewTreasureHunt(treasureHuntDefn, huntId)
+    local treasureHunt = RicksMLC_TreasureHuntServer:new(treasureHuntDefn, huntId)
+    if self.tempRestrictToPlayer then
+        treasureHunt:RestrictMapToPlayer(self.tempRestrictToPlayer)
+        self.tempRestrictToPlayer = nil
+    end
+    return treasureHunt
+end
+
 
 function RicksMLC_TreasureHuntMgrServer:RecreateMapItem(mapItemDetails)
     -- {mapItem = mapItem, stashMapName = mapItem:getMapID(), huntId = self.HuntId, i = self.ModData.CurrentMapNum}
     local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
     mapItem:setMapID(mapItemDetails.stashMapName)
-    mapItem:setName(mapItemDetails.displayName)-- treasureItem:getDisplayName())
+    mapItem:setName(mapItemDetails.displayName)-- treasureItem:getDisplayName()
     mapItem:setCustomName(true)
     return mapItem
 end
 
-function RicksMLC_TreasureHuntMgrServer:SetWaitingToHitZombie(value)
-    RicksMLC_TreasureHuntMgr.SetWaitingToHitZombie(self, value)
+function RicksMLC_TreasureHuntMgrServer:SetWaitingToHitZombie(isWaiting, treasureHunt, player)
+    if isWaiting then
+        -- FIXME: Handle the player waiting for hitting zombie.
+    else
+        -- FIXME: Handle the reset.
+    end
+    RicksMLC_TreasureHuntMgr.SetWaitingToHitZombie(self, isWaiting, treasureHunt)
     self:SendMgrServerStatus(nil, nil)
 end
 
-function RicksMLC_TreasureHuntMgrServer.SetOnHitZombieForNewMap()
+function RicksMLC_TreasureHuntMgrServer:SetOnHitZombieForNewMap(treasureHunt)
+    -- This override does not call the base class SetOnHitZombieForNewMap as that method only applies to the client-side.
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer.SetOnHitZombieForNewMap() Server sending Waiting to hit a zombie")
-    self:SetWaitingToHitZombie(true)
-    local args = {}
-    sendServerCommand("RicksMLC_TreasureHuntMgr", "SetOnHitZombieForNewMap", args)
+    self:SetWaitingToHitZombie(true, treasureHunt)
+    local args = {treasureHunt = treasureHunt, player = nil} -- FIXME: How do we know which player on the server?
+    -- TODO: MP: Check this is the correct player
+    sendServerCommand("RicksMLC_TreasureHuntMgrClient", "SetOnHitZombieForNewMap", args)
 end
 
 function RicksMLC_TreasureHuntMgrServer:HandleOnAddTreasureHunt(newTreasureHunt)
-        -- Override this on the server and client.
-        -- local checkResult = newTreasureHunt:CheckIfNewMapNeeded(getPlayer()) -- Note: This is a client-only function
-        -- if checkResult.NewMapNeeded then
-        --     RicksMLC_TreasureHuntMgr.SetOnHitZombieForNewMap()
-        -- end
-    
-        --triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt")
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleOnAddTreasureHunt() '" .. newTreasureHunt.Name .. "'")
     local args = {NewTreasureHunt = newTreasureHunt}
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "AddTreasureHunt", args)
 end
@@ -95,7 +112,7 @@ function RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie(player, args)
     -- Server has received a message that the client has hit a zombie
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
 
-    self:SetWaitingToHitZombie(false)
+    self:SetWaitingToHitZombie(false, nil, player)
     local mapItemList = self:CreateClientInitiatedMapItems(player, args)
     local replyArgs = {playerNum = player:getPlayerNum(), mapItemList = mapItemList}
     RicksMLC_THSharedUtils.DumpArgs(replyArgs, 0, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie() replyArgs")
@@ -145,9 +162,64 @@ function RicksMLC_TreasureHuntMgrServer:RecordFoundTreasure(huntId, mapNum)
     end
     self.TreasureHunts[huntId]:FinishOrSetNextMap()
     if self.TreasureHunts[huntId]:IsNewMapNeeded() then
-        self:SetWaitingToHitZombie()
+        self:SetWaitingToHitZombie(true, self.TreasureHunts[huntId])
     end
 end
+
+function RicksMLC_TreasureHuntMgrServer.GetPlayer(userName, verbose)
+    local player = getPlayerFromUsername(userName)
+    if not player then
+        if verbose then DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer.GetPlayer() Error: player username '" .. userName .. "' not found.  Current users:") end
+        local playerList = getOnlinePlayers()
+        for i = 0, playerList:size()-1 do
+            if verbose then  DebugLog.log(DebugType.Mod, "  Username '" .. playerList:get(i):getUsername() .. "'")  end
+            if playerList:get(i):getUsername() == userName then
+                if verbose then DebugLog.log(DebugType.Mod, "  Username '" .. playerList:get(i):getUsername() .. "' found ¯\_(ツ)_/¯ ") end
+                player = playerList:get(i)
+                break
+            end
+        end
+    end
+    return player
+end
+
+function RicksMLC_TreasureHuntMgrServer.GetRandomPlayer()
+    local playerList = getOnlinePlayers()
+    if playerList:size() == 0 then return nil end
+
+    local num = ZombRand(0, playerList:size()-1)
+    return playerList:get(num)
+end
+
+-- FIXME: This is probably wrong for already defined treasure hunts as they may already be restricted to a player
+function RicksMLC_TreasureHuntMgrServer:AddTreasureHunt(treasureHuntDefn, isFromModData)
+    self.tempRestrictToPlayer = self.tempRestrictToPlayer or RicksMLC_TreasureHuntMgrServer.GetRandomPlayer()
+    local treasureHunt = RicksMLC_TreasureHuntMgr.AddTreasureHunt(self, treasureHuntDefn, isFromModData) -- self:NewTreasureHunt(args.treasureHuntDefn)
+    return treasureHunt
+end
+
+function RicksMLC_TreasureHuntMgrServer:AddTreasureHuntFromClient(player, args)
+    -- Call the base class AddTreasureHunt() to manually add the one sent from the client
+    if args.Player then
+        self.tempRestrictToPlayer = RicksMLC_TreasureHuntMgrServer.GetPlayer(args.Player) or player  -- Choose the originating player if none set
+    end
+    -- The tempRestrictToPlayer will be used when the base class calles NewTreasureHunt()
+    self:AddTreasureHunt(args.tresureHuntDefn, false)
+    -- FIXME: Remove?
+    local treasureHunt = RicksMLC_TreasureHuntMgr.AddTreasureHunt(self, args.tresureHuntDefn, false) -- self:NewTreasureHunt(args.treasureHuntDefn)
+    triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt", treasureHunt)
+end
+
+function RicksMLC_TreasureHuntMgrServer:HandleRequestInitTreasureHunts(player, args)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleRequestInitTreasureHunts() Sending InitialTreasureHunts")
+    local args = {}
+    args.treasureHuntList = {}
+    for i, treasureHunt in ipairs(self.TreasureHunts) do
+        args.treasureHuntList[#args.treasureHuntList+1] = treasureHunt
+    end
+    sendServerCommand("RicksMLC_TreasureHuntMgrClient", "InitialTreasureHunts", args)
+end
+
 
 -------------------------------------
 -- Static methdods
@@ -176,6 +248,14 @@ function RicksMLC_TreasureHuntMgrServer.OnClientCommand(moduleName, command, pla
     end
     if command == "RequestMgrServerStatus" then
         RicksMLC_TreasureHuntMgr.Instance():SendMgrServerStatus(player, args)
+        return
+    end
+    if command == "AddTreasureHuntFromClient" then
+        RicksMLC_TreasureHuntMgr.Instance():AddTreasureHuntFromClient(player, args)
+        return
+    end
+    if command == "RequestInitTreasureHunts" then
+        RicksMLC_TreasureHuntMgr.Instance():HandleRequestInitTreasureHunts(player, args)
         return
     end
 end
@@ -210,14 +290,10 @@ local function TreasureHuntMgrPreInit()
     DebugLog.log(DebugType.Mod, "server RicksMLC_TreasureHuntMgr_PreInit event detected")
 end
 
-local function TreasureHuntMgrInitAddTreasureHunt(treasureHuntDefn)
-    DebugLog.log(DebugType.Mod, "server RicksMLC_TreasureHuntMgr_AddTreasureHunt event detected")
-    RicksMLC_THSharedUtils.DumpArgs(treasureHuntDefn, 0, "Added TreasureHuntDefn")
-end
 
 Events.OnServerStarted.Add(RicksMLC_TreasureHuntMgrServer.OnServerStarted)
 
 Events.RicksMLC_TreasureHuntMgr_InitDone.Add(TreasureHuntMgrInitDone)
 Events.RicksMLC_TreasureHuntMgr_PreInit.Add(TreasureHuntMgrPreInit)
-Events.RicksMLC_TreasureHuntMgr_AddTreasureHunt.Add(TreasureHuntMgrInitAddTreasureHunt)
+
 
