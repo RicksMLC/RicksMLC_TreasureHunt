@@ -213,39 +213,19 @@ function RicksMLC_TreasureHuntMgrClient:RecreateMapItem(mapItemDetails)
     return mapItem
 end
 
-function RicksMLC_TreasureHuntMgrClient:UpdateLootMapsInitFn(stashMapName, huntId, i)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:UpdateLootMapsInitFn() " .. stashMapName)
-    LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
-    RicksMLC_MapIDLookup.Instance():AddMapID(stashMapName, huntId, i)
-end
-
-function RicksMLC_TreasureHuntMgrClient:UpdateTreasureHuntMap(mapItemDetails)
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:UpdateTreasureHuntMap()")
-    for i, treasureHunt in ipairs(self.TreasureHunts) do
-        if treasureHunt.Name == mapItemDetails.name then
-            treasureHunt.ModData.Maps = mapItemDetails.Maps
-            treasureHunt.ModData.LastSpawnedMapNum = treasureHunt.ModData.CurrentMapNum
-            treasureHunt:AddStashFromServer()
-        end
-    end
-end
 
 function RicksMLC_TreasureHuntMgrClient:HandleOnMapItemsGenerated(args)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.HandleOnMapItemsGenerated() self.HitZombie: " .. tostring(self.HitZombie))
     RicksMLC_THSharedUtils.DumpArgs(args, 0, "HandleOnMapItemsGenerated args")
-    if getPlayer():getPlayerNum() == args.playerNum then
-        if args.mapItemList then
-            for _, mapItemDetails in ipairs(args.mapItemList) do
-                self:UpdateTreasureHuntMap(mapItemDetails)
-                self:UpdateLootMapsInitFn(mapItemDetails.stashMapName, mapItemDetails.huntId, mapItemDetails.i)
-                local mapItem = self:RecreateMapItem(mapItemDetails)
-                if self.HitZombie then
-                    if self.HitZombie:isDead() then
-                        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.HandleOnMapItemsGenerated() isDead. map: " .. mapItem:getDisplayName())
-                        self.HitZombie:getInventory():addItem(mapItem)
-                    else
-                        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.HandleOnMapItemsGenerated() not dead. map: " .. mapItem:getDisplayName())
-                        self.HitZombie:addItemToSpawnAtDeath(mapItem)
+
+    if args.mapItemList then
+        for _, mapItemDetails in ipairs(args.mapItemList) do
+            for i, treasureHunt in ipairs(self.TreasureHunts) do
+                if treasureHunt.Name == mapItemDetails.name then
+                    treasureHunt:UpdateTreasureHuntMap(mapItemDetails)
+                    if getPlayer():getPlayerNum() == args.playerNum then
+                        local mapItem = self:RecreateMapItem(mapItemDetails)
+                        treasureHunt:AddMapToWorld(mapItem, self.HitZombie, getPlayer():getSquare())
                     end
                 end
             end

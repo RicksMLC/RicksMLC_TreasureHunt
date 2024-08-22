@@ -298,44 +298,28 @@ function RicksMLC_TreasureHunt:AddStashToStashUtil(treasureModData, i, stashMapN
     RicksMLC_StashDescLookup.Instance():AddNewStash(stashMapName)
 end
 
+function RicksMLC_TreasureHunt:UpdateLootMapsInitFn(stashMapName, huntId, i)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:UpdateLootMapsInitFn() " .. stashMapName)
+    -- Note: The LootMaps table only exists on the client/single player side.  The server should override to not use it.
+    LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
+    RicksMLC_MapIDLookup.Instance():AddMapID(stashMapName, huntId, i) -- The MapIDLookup is only used on the client for reading maps.
+end
+
 function RicksMLC_TreasureHunt:AddStashMap(treasureModData, i)
     local stashMapName = self:GenerateMapName(i)
     local stashDesc = RicksMLC_StashDescLookup.Instance():StashLookup(stashMapName)
     if not stashDesc then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashMap() Adding stash for " .. stashMapName)
         self:AddStashToStashUtil(treasureModData, i, stashMapName)
-        -- FIXME: Remove
-        -- local spawnTable = stashMapName -- This string is the lookup into the SuburbsDisributions table.  See RicksMLC_TreasureHuntDistributions.lua
-        -- local newStashMap = RicksMLC_TreasureHuntStash.AddStash(
-        --     stashMapName,
-        --     treasureModData.buildingCentreX,
-        --     treasureModData.buildingCentreY, 
-        --     treasureModData.barricades,
-        --     treasureModData.zombies,
-        --     "Base." .. stashMapName,
-        --     spawnTable)
-        
-        --     dumpStash(newStashMap)        
-
-        -- self:CallDecorator(newStashMap, treasureModData, i)
-        -- RicksMLC_StashDescLookup.Instance():AddNewStash(stashMapName)
     else
         DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
         RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
     end
-    if isClient() or not isServer() then
-        LootMaps.Init[stashMapName] = RicksMLC_TreasureHunt.MapDefnFn
-    end
-    RicksMLC_MapIDLookup.Instance():AddMapID(stashMapName, self.HuntId, i)
+    self:UpdateLootMapsInitFn(stashMapName, self.HuntId, i)
 end
 
 function RicksMLC_TreasureHunt:AddStashMaps()
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddStashMaps()")
-    --FIXME: Remove
-    -- local stashLookup = {}
-    -- for i, stashDesc in ipairs(StashDescriptions) do
-    --     stashLookup[stashDesc.name] = stashDesc
-    -- end
     for i, treasureModData in ipairs(self.ModData.Maps) do
         -- Check if the stash already exists
         self:AddStashMap(treasureModData, i)
@@ -550,7 +534,45 @@ function RicksMLC_TreasureHunt:IsBuildingVisited()
     end
 end
 
-function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie, doStash)
+-- AddMapToWorld: Override on the server to do nothing as it is meaninless to add the mapItem on the server side.
+function RicksMLC_TreasureHunt:AddMapToWorld(mapItem, zombie, gridSquare)
+    if not zombie then
+        gridSquare:AddWorldInventoryItem(mapItem, ZombRand(0.1, 0.5), ZombRand(0.1, 0.5), 0)
+        return
+    end
+
+    if zombie:isDead() then
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() isDead. map: " .. mapItem:getDisplayName())
+        --FIXME: This may not work if the zombie is converted to IsoDeadBody.  zombie:getInventory():addItem(mapItem)
+        -- so try to find the body
+        local bodies = zombie:getSquare():getDeadBodys()
+        local body = nil
+        for i=0, bodies:size()-1 do
+            local b = bodies:get(i)
+            local onlineID = b:getOnlineID()
+            if bodies:get(i):getOnlineID() == self.HitZombie:getOnlineID() then
+                DebugLog.log(DebugType.Mod, "  found body")
+                body = bodies:get(i)
+                break
+            end
+        end
+        if body then
+            body:getInventory():addItem(mapItem)
+        else
+            local sq = zombie:getSquare()
+            if sq then
+                sq:AddWorldInventoryItem(mapItem, ZombRand(0.1, 0.5), ZombRand(0.1, 0.5), 0)
+            end
+        end
+    else
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() not dead")
+        zombie:addItemToSpawnAtDeath(mapItem)
+    end
+end
+
+-- AddNextMapToZombie: If the zombie is nil, add to the given gridSquare.
+-- Note: On the server side the zombie and gridSquare will be nil.  See AddMapToWorld() override.
+function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie, doStash, gridSquare)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddNextMapToZombie()")
     if not self.ModData.Maps[self.ModData.CurrentMapNum] or self.ModData.Maps[self.ModData.CurrentMapNum].Found then
         self:GenerateNextTreasureMap()
@@ -562,16 +584,7 @@ function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie, doStash)
     local mapItem = self:GenerateNextMapItem(doStash)
     self.ModData.Maps[self.ModData.CurrentMapNum].stashMapName = mapItem:getMapID()
     self.ModData.Maps[self.ModData.CurrentMapNum].mapDisplayName = mapItem:getDisplayName()
-    if zombie then
-        -- This may be called in the server, where the zombie is not defined
-        if zombie:isDead() then
-            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddNextMapToZombie() isDead")
-            zombie:getInventory():addItem(mapItem)
-        else
-            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddNextMapToZombie() not dead")
-            zombie:addItemToSpawnAtDeath(mapItem)
-        end
-    end
+    self:AddMapToWorld(mapItem, zombie, gridSquare)
     -- Check if the building has been visited before now.
     if self:IsBuildingVisited() then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddNextMapToZombie(): WARNING Buiding already visited for map " .. mapItem:getName())
@@ -718,52 +731,6 @@ function RicksMLC_TreasureHunt:ResetLastSpawnedMapNum()
     end
 end
 
--- FIXME: This is a workaround which may have to remain for the server side.
--- FIXME: Removed to the server subclass of RicksMLC_TreasureHunt
--- function RicksMLC_TreasureHunt:HandleClientOnHitZombie(player, character)
---     -- Server side handling of a client hitting a zombie - generate the treasure map defn (distribtions etc)
---     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.HandleClientOnHitZombie() ".. self.Name)
---     if self.ModData.Finished then return nil end
---     local mapItemDetails = nil
---
---     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.HandleClientOnHitZombie() CurrentMapNum: " .. tostring(self.ModData.CurrentMapNum) .. " LastSpawnedMapNum " .. tostring(self.ModData.LastSpawnedMapNum))
--- --    if self.ModData.CurrentMapNum == 0 then
---         -- FIXME: Should this really be incrementing as this is generating a new map anyway.
---         --self.ModData.CurrentMapNum = self.ModData.CurrentMapNum + 1
--- --    end
---     if self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum then
---         mapItemDetails = self:AddNextMapToZombie(nil, true)
---
---         self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum
---         self:SaveModData()
---     end
---     return mapItemDetails 
--- end
-
--- FIXME: Remove
---
--- function RicksMLC_TreasureHunt:GetPlayerId(player)
---     return player:getSteamID()
--- end
---
--- -- MP: Limits the creation of the maps to this player.
--- function RicksMLC_TreasureHunt:RestrictMapToPlayer(player)
---     self.RestrictMapForUser = self:GetPlayerId(player)
---     self.ModData.RestrictMapForUser = self.RestrictMapForUser
--- end
---
--- -- MP: Releases the map so any player will get it.
--- function RicksMLC_TreasureHunt:UnrestrictMapForPlayers()
---     self.RestrictMapForUser = nil
---     self.ModData.RestrictMapForUser = self.RestrictMapForUser
--- end
---
--- function RicksMLC_TreasureHunt:IsValidAddNextMapToZombie(character)
---     return character == getPlayer()
---        and self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum 
---        and (not self.RestrictMapForUser or self.RestrictMapForUser == self:GetPlayerId(getPlayer()))
--- end
-
 function RicksMLC_TreasureHunt:IsValidAddNextMapToZombie(character)
     return character == getPlayer()
        and (self.ModData.CurrentMapNum == 0 or self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum)
@@ -775,7 +742,7 @@ function RicksMLC_TreasureHunt:HandleOnHitZombie(zombie, character, bodyPartType
     -- Make sure it's not just any character that hits the zombie
     local mapItem = nil
     if self:IsValidAddNextMapToZombie(character) then
-        mapItemDetails = self:AddNextMapToZombie(zombie, doStash)
+        mapItemDetails = self:AddNextMapToZombie(zombie, doStash, getPlayer():getSquare())
         if self.ModData.CurrentMapNum == 0 then
             DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:HandleOnHitZombie() Error: self.ModData.CurrentMapNum == 0, and it shouldn't.")
         end

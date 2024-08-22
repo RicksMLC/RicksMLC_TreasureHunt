@@ -16,6 +16,14 @@ function RicksMLC_TreasureHuntServer:GenerateNextMapItem(doStash)
     return RicksMLC_TreasureHunt.GenerateNextMapItem(self, false) -- Don't doStash on the server, as the client will do it when the map is read.
 end
 
+function RicksMLC_TreasureHuntServer:UpdateLootMapsInitFn(stashMapName, huntId, i)
+    -- The LootMaps table does not exist on the server. This override masks it out.
+end
+
+function RicksMLC_TreasureHuntServer:AddMapToWorld(mapItem, zombie, gridSquare)
+    -- Maps can only be added to the world on the client, so override to mask out.
+end
+
 -- FIXME: This is a workaround which may have to remain for the server side.
 function RicksMLC_TreasureHuntServer:HandleClientOnHitZombie(player, character)
     -- Server side handling of a client hitting a zombie - generate the treasure map defn (distribtions etc)
@@ -29,7 +37,7 @@ function RicksMLC_TreasureHuntServer:HandleClientOnHitZombie(player, character)
         self.ModData.CurrentMapNum = self.ModData.CurrentMapNum + 1
     end
     if self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum then
-        mapItemDetails = self:AddNextMapToZombie(nil, true)
+        mapItemDetails = self:AddNextMapToZombie(nil, true, nil)
 
         self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum
         self:SaveModData()

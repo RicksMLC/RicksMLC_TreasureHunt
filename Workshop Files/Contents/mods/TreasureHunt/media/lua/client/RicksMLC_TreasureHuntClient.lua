@@ -12,6 +12,14 @@ function RicksMLC_TreasureHuntClient:new(treasureHuntDefn, huntId)
     return o
 end
 
+function RicksMLC_TreasureHuntClient:UpdateTreasureHuntMap(mapItemDetails)
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:UpdateTreasureHuntMap()")
+    self.ModData.Maps = mapItemDetails.Maps
+    self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum
+    self:AddStashFromServer()
+    self:UpdateLootMapsInitFn(mapItemDetails.stashMapName, mapItemDetails.huntId, mapItemDetails.i)
+end
+
 function RicksMLC_TreasureHuntClient:AddStashFromServer()
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntClient:AddStashFromServer()")
     local stashMapName = self.ModData.Maps[self.ModData.CurrentMapNum].stashMapName
