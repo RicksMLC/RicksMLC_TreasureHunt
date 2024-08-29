@@ -87,10 +87,10 @@ function RicksMLC_TreasureHuntMgrServer:SetOnHitZombieForNewMap(treasureHunt)
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "SetOnHitZombieForNewMap", args)
 end
 
-function RicksMLC_TreasureHuntMgrServer:HandleOnAddTreasureHunt(newTreasureHunt)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleOnAddTreasureHunt() '" .. newTreasureHunt.Name .. "'")
+function RicksMLC_TreasureHuntMgrServer:SendAddedTreasureHuntToClients(newTreasureHunt)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:SendAddedTreasureHuntToClients() '" .. newTreasureHunt.Name .. "'")
     local args = {NewTreasureHunt = newTreasureHunt}
-    sendServerCommand("RicksMLC_TreasureHuntMgrClient", "AddTreasureHunt", args)
+    sendServerCommand("RicksMLC_TreasureHuntMgrClient", "AddTreasureHuntFromServer", args)
 end
 
 function RicksMLC_TreasureHuntMgrServer:CreateClientInitiatedMapItems(player, args)
@@ -194,20 +194,22 @@ end
 -- FIXME: This is probably wrong for already defined treasure hunts as they may already be restricted to a player
 function RicksMLC_TreasureHuntMgrServer:AddTreasureHunt(treasureHuntDefn, isFromModData)
     self.tempRestrictToPlayer = self.tempRestrictToPlayer or RicksMLC_TreasureHuntMgrServer.GetRandomPlayer()
+
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:AddTreasureHunt() tempRestrictToPlayer: " .. (self.tempRestrictToPlayer and self.tempRestrictToPlayer:getUsername()) or "nil")
+
     local treasureHunt = RicksMLC_TreasureHuntMgr.AddTreasureHunt(self, treasureHuntDefn, isFromModData) -- self:NewTreasureHunt(args.treasureHuntDefn)
     return treasureHunt
 end
 
 function RicksMLC_TreasureHuntMgrServer:AddTreasureHuntFromClient(player, args)
     -- Call the base class AddTreasureHunt() to manually add the one sent from the client
+    RicksMLC_THSharedUtils.DumpArgs(args, 0, "RicksMLC_TreasureHuntMgrServer:AddTreasureHuntFromClient() args")
     if args.Player then
         self.tempRestrictToPlayer = RicksMLC_TreasureHuntMgrServer.GetPlayer(args.Player) or player  -- Choose the originating player if none set
     end
     -- The tempRestrictToPlayer will be used when the base class calles NewTreasureHunt()
-    self:AddTreasureHunt(args.tresureHuntDefn, false)
-    -- FIXME: Remove?
-    local treasureHunt = RicksMLC_TreasureHuntMgr.AddTreasureHunt(self, args.tresureHuntDefn, false) -- self:NewTreasureHunt(args.treasureHuntDefn)
-    triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt", treasureHunt)
+    local treasureHunt = self:AddTreasureHunt(args.treasureHuntDefn, false)
+    self:SendAddedTreasureHuntToClients(treasureHunt)
 end
 
 function RicksMLC_TreasureHuntMgrServer:HandleRequestInitTreasureHunts(player, args)

@@ -253,7 +253,7 @@ function RicksMLC_TreasureHuntMgrClient:AddTreasureHunt(treasureHuntDefn)
     -- Send the info to the server so it creates the treasure hunt and forwards to all clients
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:AddTreasureHunt() '" .. treasureHuntDefn.Name .. "'")
     local args = {treasureHuntDefn = treasureHuntDefn}
-    sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntServer", "AddTreasureHuntFromClient", args)
+    sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrServer", "AddTreasureHuntFromClient", args)
 end
 
 function RicksMLC_TreasureHuntMgrClient:AddTreasureHuntFromServer(newTreasureHunt)
@@ -292,7 +292,7 @@ function RicksMLC_TreasureHuntMgrClient.OnServerCommand(moduleName, command, arg
 	if moduleName ~= "RicksMLC_TreasureHuntMgrClient" then return end
 
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.OnServerCommand: " .. moduleName .. ", " .. command)
-    if command == "AddTreasureHunt" then
+    if command == "AddTreasureHuntFromServer" then
         RicksMLC_TreasureHuntMgr.Instance():AddTreasureHuntFromServer(args.NewTreasureHunt)
         return
     end

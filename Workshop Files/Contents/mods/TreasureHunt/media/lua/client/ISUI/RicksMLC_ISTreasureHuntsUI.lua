@@ -180,7 +180,7 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
         y = y + lineHeight
 
         --name = self.Name, huntId = self.HuntID, i = self.ModData.CurrentMapNum, finished = self.ModData.Finished,  treasureModData = modData}
-        self:drawText("Treasure Hunt Item #: " .. tostring(self.treasureHuntInfo.i), x, y, 1, 1, 1, 1, UIFont.NewSmall)
+        self:drawText("Treasure Hunt Item #: " .. tostring(self.treasureHuntInfo.i) .. " of " .. tostring(#self.treasureHuntInfo.treasureHuntDefn.Treasures), x, y, 1, 1, 1, 1, UIFont.NewSmall)
         -- treasureModData.Treasure is the internal name (type()) of the treasure item
         y = y + lineHeight
         if self.treasureHuntInfo.treasureHuntDefn then

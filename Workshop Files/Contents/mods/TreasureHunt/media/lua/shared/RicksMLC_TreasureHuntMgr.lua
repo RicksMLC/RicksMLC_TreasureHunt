@@ -149,6 +149,13 @@ function RicksMLC_TreasureHuntMgr:FindCurrentlyReadTreasureHunt()
     return nil
 end
 
+function RicksMLC_TreasureHuntMgr:IsTreasureHuntNameUnique(name)
+    for i, treasureHunt in ipairs(self.TreasureHunts) do
+        if treasureHunt.Name == name then return false end
+    end
+    return true
+end
+
 function RicksMLC_TreasureHuntMgr:LoadModData()
     self.ModData = getGameTime():getModData()["RicksMLC_TreasureHuntMgr"]
     if not self.ModData then
