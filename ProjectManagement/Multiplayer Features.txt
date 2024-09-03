@@ -1,15 +1,30 @@
 Multiplayer Features.txt
 
-Initial phase is now re-working.  Generates the treasure maps on the client first zombie hit, and the server assigns the map and creates the item.
+[+] Initial phase is now re-working.
+    Generates the treasure maps on the client first zombie hit, and the server assigns the map and creates the item.
+
+[+] Static (on start-up) maps are defined on the server and distributed to the cilents.
+[-] Reading the map on the client will instantiate the treasure
+    [ ] TODO: Test this works for MP - ie: Player A opens the map, and Player B can go to the building and find the barricades and treasure
+[ ] MP Treasure Hunt Game Modes:
+    [ ] Free-for-all?
+    [ ] Co-op
+    [ ] Race
+
 
 To do:
     1) Barricades are not real for the client.  They are visible, but not real.  Logging off and back on removes them.  
         Sometimes they are real, and sometimes they are not.  It may be the client is sending the read update to the server
         before the server can call mapItem:doBuildingStash().  Check if there is code to prevent it from doing twice.
         The client is not supposed to doStash anyway?
+
+        Answer: From observation: The barricades and stash are instantiated in the building when the player first enters the cell which
+        contains the building.  I found that teleporting to the building after reading the map would cause the building to have the
+        visuals for the barricades, but they were not actually barricaded.
+
         The mapItem creation code calls the doStashItem and doBuildingStash on the server, so the map reading on the client
         should be redundant?  The treasure was found in the cabin with fake barricades, so maybe the fake ones are an 
         artifact of teleporting to the site and the building is not fully spawned in. See StashSystem var2.getBuilding().isFullyStreamedIn()
         and check this before calling doBuilding() as a warning when teleporting, or at least check for corellation.
 
-    2) The second treasure (Fluffyfoot) is not not created.  Dunno why yet.
+        I may have to manually call doBuilding() when teleporting for debug support...

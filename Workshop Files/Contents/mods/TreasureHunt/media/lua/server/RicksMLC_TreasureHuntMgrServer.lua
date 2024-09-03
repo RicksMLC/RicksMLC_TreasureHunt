@@ -50,9 +50,11 @@ end
 
 -- Create a TreasureHuntServer object for the server mgr
 function RicksMLC_TreasureHuntMgrServer:NewTreasureHunt(treasureHuntDefn, huntId)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:NewTreasureHunt(): '" .. treasureHuntDefn.Name .. "'")
     local treasureHunt = RicksMLC_TreasureHuntServer:new(treasureHuntDefn, huntId)
     if self.tempRestrictToPlayer then
         treasureHunt:RestrictMapToPlayer(self.tempRestrictToPlayer)
+        RicksMLC_THSharedUtils.DumpArgs(treasureHunt, 0, "RicksMLC_TreasureHuntMgrServer:NewTreasureHunt() tempRestrictToPlayer treasureHunt")
         self.tempRestrictToPlayer = nil
     end
     return treasureHunt
@@ -90,6 +92,7 @@ end
 function RicksMLC_TreasureHuntMgrServer:SendAddedTreasureHuntToClients(newTreasureHunt)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:SendAddedTreasureHuntToClients() '" .. newTreasureHunt.Name .. "'")
     local args = {NewTreasureHunt = newTreasureHunt}
+    RicksMLC_THSharedUtils.DumpArgs(args, 0, "RicksMLC_TreasureHuntMgrServer: sendServerCommand: AddTreasureHuntFromServer args")
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "AddTreasureHuntFromServer", args)
 end
 
@@ -114,7 +117,7 @@ function RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie(player, args)
 
     self:SetWaitingToHitZombie(false, nil, player)
     local mapItemList = self:CreateClientInitiatedMapItems(player, args)
-    local replyArgs = {playerNum = player:getPlayerNum(), mapItemList = mapItemList}
+    local replyArgs = {playerUsername = player:getUsername(), mapItemList = mapItemList}
     RicksMLC_THSharedUtils.DumpArgs(replyArgs, 0, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie() replyArgs")
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "MapItemsGenerated", replyArgs)
@@ -154,7 +157,7 @@ function RicksMLC_TreasureHuntMgrServer:SendMgrServerStatus(player, args)
     sendServerCommand("RicksMLC_Cache", "SentMgrServerStatus", retArgs)
 end
 
-function RicksMLC_TreasureHuntMgrServer:RecordFoundTreasure(huntId, mapNum)
+function RicksMLC_TreasureHuntMgrServer:RecordFoundTreasure(huntId, mapNum, player)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:RecordFoundTreasure() huntId:" .. tostring(huntId) )
     if huntId > #self.TreasureHunts then
         DebugLog.log(DebugType.Mod, "   huntId invalid:" .. tostring(#self.TreasureHunts))
@@ -163,6 +166,12 @@ function RicksMLC_TreasureHuntMgrServer:RecordFoundTreasure(huntId, mapNum)
     self.TreasureHunts[huntId]:FinishOrSetNextMap()
     if self.TreasureHunts[huntId]:IsNewMapNeeded() then
         self:SetWaitingToHitZombie(true, self.TreasureHunts[huntId])
+    else
+        if self.TreasureHunts[huntId].Finished then
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:RecordFoundTreasure() Finished huntId:" .. tostring(huntId) )
+            local args = {Name = self.TreasureHunts[huntId].Name, PlayerUsername = player:getUsername()}
+            sendServerCommand("RicksMLC_TreasureHuntMgrClient", "FinishTreasureHunt", args)
+        end
     end
 end
 
@@ -193,11 +202,13 @@ end
 
 -- FIXME: This is probably wrong for already defined treasure hunts as they may already be restricted to a player
 function RicksMLC_TreasureHuntMgrServer:AddTreasureHunt(treasureHuntDefn, isFromModData)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:AddTreasureHunt() tempRestrictToPlayer: " .. ((self.tempRestrictToPlayer and self.tempRestrictToPlayer:getUsername()) or "nil"))
+
     self.tempRestrictToPlayer = self.tempRestrictToPlayer or RicksMLC_TreasureHuntMgrServer.GetRandomPlayer()
 
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:AddTreasureHunt() tempRestrictToPlayer: " .. (self.tempRestrictToPlayer and self.tempRestrictToPlayer:getUsername()) or "nil")
 
-    local treasureHunt = RicksMLC_TreasureHuntMgr.AddTreasureHunt(self, treasureHuntDefn, isFromModData) -- self:NewTreasureHunt(args.treasureHuntDefn)
+    local treasureHunt = RicksMLC_TreasureHuntMgr.AddTreasureHunt(self, treasureHuntDefn, isFromModData)
     return treasureHunt
 end
 
@@ -205,7 +216,7 @@ function RicksMLC_TreasureHuntMgrServer:AddTreasureHuntFromClient(player, args)
     -- Call the base class AddTreasureHunt() to manually add the one sent from the client
     RicksMLC_THSharedUtils.DumpArgs(args, 0, "RicksMLC_TreasureHuntMgrServer:AddTreasureHuntFromClient() args")
     if args.Player then
-        self.tempRestrictToPlayer = RicksMLC_TreasureHuntMgrServer.GetPlayer(args.Player) or player  -- Choose the originating player if none set
+        self.tempRestrictToPlayer = RicksMLC_TreasureHuntMgrServer.GetPlayer(args.Player, true) or player  -- Choose the originating player if none set
     end
     -- The tempRestrictToPlayer will be used when the base class calles NewTreasureHunt()
     local treasureHunt = self:AddTreasureHunt(args.treasureHuntDefn, false)
@@ -237,7 +248,7 @@ function RicksMLC_TreasureHuntMgrServer.OnClientCommand(moduleName, command, pla
         return
     end
     if command == "RecordFoundTreasure" then
-        RicksMLC_TreasureHuntMgr.Instance():RecordFoundTreasure(args.huntId, args.mapNum)
+        RicksMLC_TreasureHuntMgr.Instance():RecordFoundTreasure(args.huntId, args.mapNum, player)
         return
     end
     if command == "RequestTreasureHuntsList" then

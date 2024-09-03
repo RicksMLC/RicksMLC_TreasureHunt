@@ -489,7 +489,7 @@ function RicksMLC_TreasureHunt:InitTreasureHunt()
     end
     self:SaveModData()
     self.Initialised = true
-    RicksMLC_THSharedUtils.DumpArgs(self.ModData, 0, "InitTreasureHunt post GeneratePastTreasures")
+    RicksMLC_THSharedUtils.DumpArgs(self, 0, "InitTreasureHunt post SaveModData()")
     self:AddStashMaps()
     -- The reinit is necessary when adding a stash after the game is started.
     -- If the StashSystem is not reinitialised the StashSystem.getStash() not find the stash, even if the

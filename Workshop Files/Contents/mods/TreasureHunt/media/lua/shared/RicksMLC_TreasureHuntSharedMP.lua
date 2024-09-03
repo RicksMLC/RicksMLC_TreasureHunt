@@ -31,8 +31,10 @@ end
 
 function RicksMLC_TreasureHuntSharedMP:LoadModData()
     RicksMLC_TreasureHunt.LoadModData(self)
-    self.RestrictMapForUser = self.ModData.RestrictMapForUser
-    self.RestrictMapForUserName = self.ModData.RestrictMapForUserName
+    if self.ModData.RestrictMapForUser then
+        self.RestrictMapForUser = self.ModData.RestrictMapForUser
+        self.RestrictMapForUserName = self.ModData.RestrictMapForUserName
+    end
 end
 
 -- MP: Id a player

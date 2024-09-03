@@ -9,7 +9,7 @@
             "command": "xcopy",
             "args": [
                 "${env:USERPROFILE}\\Documents\\Ricks Mid Life Crisis\\ProjectZomboid Mods\\RicksMLC_TreasureHunt\\Workshop Files",
-                "${env:USERPROFILE}\\Zomboid\\Workshop\\RicksMLC_TreasureHunt\\",
+                "${env:USERPROFILE}\\Zomboid\\Workshop\\RicksMLC_TreasureHuntMP\\",
                 "/s",
                 "/e",
                 "/y",
@@ -44,7 +44,7 @@
             "command": "xcopy",
             "args": [
                 "${env:USERPROFILE}\\Documents\\Ricks Mid Life Crisis\\ProjectZomboid Mods\\RicksMLC_TreasureHunt\\Workshop Files",
-                "${env:USERPROFILE}\\Zomboid\\Workshop\\RicksMLC_TreasureHunt",
+                "${env:USERPROFILE}\\Zomboid\\Workshop\\RicksMLC_TreasureHuntMP",
                 "/s",
                 "/e",
                 "/y",

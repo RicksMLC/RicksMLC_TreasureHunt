@@ -45,6 +45,8 @@ function RicksMLC_TreasureHuntMgr:new()
     o.TreasureHunts = {}
 
     o.ModData = nil
+
+    o.BulkLoading = false
     return o
 end
 
@@ -184,6 +186,7 @@ function RicksMLC_TreasureHuntMgr:UpdateTreasureHuntDefns(treasureHuntDefn)
 end
 
 function RicksMLC_TreasureHuntMgr:NewTreasureHunt(treasureHuntDefn, huntId)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:NewTreasureHunt(): '" .. treasureHuntDefn.Name .. "'")
     return RicksMLC_TreasureHunt:new(treasureHuntDefn, huntId)
 end
 
@@ -196,23 +199,31 @@ function RicksMLC_TreasureHuntMgr:AddTreasureHunt(treasureHuntDefn, isFromModDat
     if self:IsDuplicate(treasureHuntDefn, self.TreasureHunts) then return end
 
     self.TreasureHunts[#self.TreasureHunts+1] = self:NewTreasureHunt(treasureHuntDefn, #self.TreasureHunts+1)
+    RicksMLC_THSharedUtils.DumpArgs(self.TreasureHunts[#self.TreasureHunts], 0, "RicksMLC_TreasureHuntMgr:AddTreasureHunt() before InitTreasureHunt()")
     self.TreasureHunts[#self.TreasureHunts]:InitTreasureHunt()
 
     if not isFromModData then 
         -- Avoid infinite loop/leak by not adding to the ModData
         self:UpdateTreasureHuntDefns(treasureHuntDefn)
     end
+    RicksMLC_THSharedUtils.DumpArgs(self.TreasureHunts[#self.TreasureHunts], 0, "RicksMLC_TreasureHuntMgr:AddTreasureHunt() after InitTreasureHunt()")
+    if not self.BulkLoading then
+        -- This is a single treasure hunt, probably added from an external mod like ChatTreasure 
+        self:HandleOnAddTreasureHunt(self.TreasureHunts[#self.TreasureHunts])
+    end
     return self.TreasureHunts[#self.TreasureHunts] -- return the generated treasure hunt
 end
 
 function RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions(treasureHuntDefinitions, isFromModData)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions()")
+    self.BulkLoading = true
     for i, treasureHuntDefn in ipairs(treasureHuntDefinitions) do
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions() '" .. treasureHuntDefn.Name .. "'")
         local treasureHunt = self:AddTreasureHunt(treasureHuntDefn, isFromModData)
         -- FIXME: Remove: triggerEvent("RicksMLC_TreasureHuntMgr_AddTreasureHunt", treasureHunt)
         -- replace with self:InitOnHitZombie() after the loop
     end
+    self.BulkLoading = false
     self:InitOnHitZombie()
 end
 

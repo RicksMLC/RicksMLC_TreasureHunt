@@ -215,7 +215,7 @@ end
 
 
 function RicksMLC_TreasureHuntMgrClient:HandleOnMapItemsGenerated(args)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.HandleOnMapItemsGenerated() self.HitZombie: " .. tostring(self.HitZombie))
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.HandleOnMapItemsGenerated() for " .. args.playerUsername)
     RicksMLC_THSharedUtils.DumpArgs(args, 0, "HandleOnMapItemsGenerated args")
 
     if args.mapItemList then
@@ -223,7 +223,8 @@ function RicksMLC_TreasureHuntMgrClient:HandleOnMapItemsGenerated(args)
             for i, treasureHunt in ipairs(self.TreasureHunts) do
                 if treasureHunt.Name == mapItemDetails.name then
                     treasureHunt:UpdateTreasureHuntMap(mapItemDetails)
-                    if getPlayer():getPlayerNum() == args.playerNum then
+                    if getPlayer():getUsername() == args.playerUsername then
+                        -- TODO: Allow this for the "goofy" game mode
                         local mapItem = self:RecreateMapItem(mapItemDetails)
                         treasureHunt:AddMapToWorld(mapItem, self.HitZombie, getPlayer():getSquare())
                     end
@@ -287,6 +288,19 @@ function RicksMLC_TreasureHuntMgrClient:AddInitialTreasureHuntsFromServer(args)
     RicksMLC_TreasureHuntMgr.Initialsed = true
 end
 
+function RicksMLC_TreasureHuntMgrClient:FinishTreasureHunt(args)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:FinishTreasureHunt() '" .. args.Name .. "' user: " .. args.PlayerUsername)
+
+    for i, treasureHunt in ipairs(self.TreasureHunts) do
+        if treasureHunt.Name == args.Name then
+            if treasureHunt.Finished then return end
+
+            treasureHunt:FinishHunt()
+            return
+        end
+    end
+end
+
 function RicksMLC_TreasureHuntMgrClient.OnServerCommand(moduleName, command, args)
     -- Received a message from the server
 	if moduleName ~= "RicksMLC_TreasureHuntMgrClient" then return end
@@ -315,12 +329,14 @@ function RicksMLC_TreasureHuntMgrClient.OnServerCommand(moduleName, command, arg
         RicksMLC_TreasureHuntMgr.Instance():AddInitialTreasureHuntsFromServer(args)
         return
     end
+    if command == "FinishTreasureHunt" then
+        RicksMLC_TreasureHuntMgr.Instance():FinishTreasureHunt(args)
+    end
 end
 
 function RicksMLC_TreasureHuntMgrClient:RequestInitTreasureHunts()
     -- The pre-init trigger will cause 3rd party treasure maps to init for the client (defns etc)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:RequestInitTreasureHunts()")
-    triggerEvent("RicksMLC_TreasureHuntMgr_PreInit")
     local args = {}
     sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrServer", "RequestInitTreasureHunts", args)
 end
@@ -397,6 +413,10 @@ local startCount = 0
 function RicksMLC_TreasureHuntMgrClient.EveryOneMinuteAtStart()
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.EveryOneMinuteAtStart(): " .. tostring(startCount))
     startCount = startCount + 1
+    if startCount == 2 then
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.EveryOneMinuteAtStart() PreInit trigger sent")
+        triggerEvent("RicksMLC_TreasureHuntMgr_PreInit")
+    end
     if startCount < 10 then return end
     -- TODO: FIXME: This request may be sent and actioned by the server before the server has finished initialising.
     --      Therefore the server needs to record the request and set it into a pending queue which waits for the server init to be complete.
@@ -419,10 +439,31 @@ Events.RicksMLC_TreasureHuntMgr_PreInit.Add(TreasureHuntMgrPreInit)
 
 
 -- Use this for testing/prototyping only
+function RicksMLC_TreasureHuntMgrClient:TestNewTreasureHunt()
+    local treasureHuntDefn = {
+        Name = "TestF9",
+        Town = "Greenport",
+        Treasures = {
+            { Item =  "Plonkies", Barricades = 30, Zombies = 0 }
+        },
+        Player = "RicksMLC"
+    }
+    local huntId = 1
+    local tempRestrictToPlayer = getPlayer()
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:NewTreasureHunt(): '" .. treasureHuntDefn.Name .. "'")
+    local treasureHunt = RicksMLC_TreasureHuntClient:new(treasureHuntDefn, huntId)
+
+    if tempRestrictToPlayer then
+        RicksMLC_THSharedUtils.DumpArgs(treasureHunt, 0, "RicksMLC_TreasureHuntMgrServer:NewTreasureHunt() tempRestrictToPlayer treasureHunt")
+        treasureHunt:RestrictMapToPlayer(tempRestrictToPlayer)
+        tempRestrictToPlayer = nil
+    end
+    return treasureHunt
+end
 -- FIXME: comment out
 function RicksMLC_TreasureHuntMgrClient.OnKeyPressed(key)
     if key == Keyboard.KEY_F10 then
-        RicksMLC_TreasureHuntMgr.Instance():RequestInitTreasureHunts()
+       RicksMLC_TreasureHuntMgr.Instance():TestNewTreasureHunt()
     end
 end
 -- Commented out code - uncomment to make temp test

@@ -23,9 +23,12 @@ Features:
     [-] Investigate and add more addContainer() calls to add more things like survivor loot to the stashMap. see RicksMLC_SampleTreasureHunts.lua (Update #2)
     [x] Can map annotations be added after definition? - Not really.  See Java Stash.load()
     [ ] Return error code if duplicate treasure hunt name detected
+    [-] Multiplayer:  This is bigger than this one line item would suggest o.O
+        [ ] Test Chat Treasure
+        [ ] Game Modes
+    [ ] Move Treasure Map decorations to the mapItem ModData.
 
 Future Features:
-    [ ] Multiplayer:  This is bigger than this one line item would suggest o.O
     [ ] Spawn a TreasureMap as part of the loot table, instead of on a zombie?
 
 Update #1:
@@ -46,4 +49,49 @@ Test Plan:
     [-] Added treasure hunt is re-loaded on subsequent startup
     [-] Do not add a treasure hunt with the same name (avoid duplicates)
 
-    
+    [ ] Multiplayer
+        [ ] Chat TreasureHunt -> Player A.  
+            [ ] Player B hits zombie = no map
+                Fail: Player B hit zombie and zombie had three maps on him, and it generated three maps on Player A location.
+            [ ] Player A hits zombie = map
+                Fail: due to previous test fail.
+            [ ] Player A opens map: Annotations Included
+            [ ] Player A finds Treasure
+            [ ] Player B hits zombie = no new map
+            [ ] Player A hits zombie = new map
+            [ ] Player A gives map to Player B
+            [ ] Player B reads map with annoatations.
+            [ ] Player B finds treasure.
+        [ ] Chat TreasureHunt -> Player A
+            Fail: ChatTreasure -> "Cruel Moose" but hunt is named "Rick's MLC"
+                    Player is Cruel Moose, but restrict to user is RicksMLC
+            [ ] Player B finds treasure in stash house
+            [ ] Player A hits zombie = no new map
+            [ ] Player B hits zombie = new map
+            [ ] Player A finds treasure 
+            [ ] Player B hits zombie = no new map
+            [ ] Player A hits zombie = new map.
+        
+    Fix: ChatTreasure - Name the map for the player to receive the map.
+
+TODO:
+    [+] Error console.txt: RicksMLC_TreasureHuntSystemC:new()    -> Remove this class.
+
+    [ ] Hit Zombie fault: Fail: Player B hit zombie and zombie had three maps on him, and it generated three maps on Player A location.
+        PlayerA hitting a zombie spawns maps on the hit zombie and the PlayerB location.
+        PlayerB (Cruel Moose) had a red error box pop up:
+            Cruel Moose console.txt: RicksMLC_TreasureHuntMgrClient:RecreateMapItem() ERROR: no stash for 'RicksMLC_TreasureMap_RicksMLC's_Great_Quest_II_2'
+                Callframe at: doStashItem
+                function: RecreateMapItem -- file: RicksMLC_TreasureHuntMgrClient.lua line # 210 | MOD: Rick's MLC Treasure Hunt (MP TEST)
+                function: HandleOnMapItemsGenerated -- file: RicksMLC_TreasureHuntMgrClient.lua line # 227 | MOD: Rick's MLC Treasure Hunt (MP TEST)
+                function: OnServerCommand -- file: RicksMLC_TreasureHuntMgrClient.lua line # 301 | MOD: Rick's MLC Treasure Hunt (MP TEST)
+
+        Cruel Moose's console.txt shows "RicksMLC_TreasureHuntSharedMP:RestrictMapToPlayer() Cruel Moose" when it should already be restricted
+        to RicksMLC.
+        It looks like the RicksMLC_TreasureHuntMgrServer.GetPlayer() may not have found the correct player
+
+    [ ] ChatTreasure fault: ChatTreasure for PlayerB (non-host) records Player: PlayerB, but the Restrict To Player is still PlayerA(host)
+
+    [ ] Player B finished treasure hunt.  Server lists hunt as finished, but client still says Active
+
+
