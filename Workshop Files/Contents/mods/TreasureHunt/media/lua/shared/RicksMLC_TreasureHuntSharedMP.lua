@@ -56,7 +56,14 @@ function RicksMLC_TreasureHuntSharedMP:UnrestrictMapForPlayers()
     self.RestrictMapForUserName = nil
 end
 
-function RicksMLC_TreasureHuntSharedMP:IsValidAddNextMapToZombie(character)
-    return RicksMLC_TreasureHunt.IsValidAddNextMapToZombie(self, character)
-       and (not self.RestrictMapForUser or self.RestrictMapForUser == self:GetPlayerId(getPlayer()))
+function RicksMLC_TreasureHuntSharedMP:IsCorrectPlayer(player)
+    return not self.RestrictMapForUser or self.RestrictMapForUser == self:GetPlayerId(player)
+end
+
+function RicksMLC_TreasureHuntSharedMP:ApplyRestrictToPlayer(mapItemDetails)
+    if self.RestrictMapForUser then
+        mapItemDetails.RestrictMapForUser = self.RestrictMapForUser
+        mapItemDetails.RestrictMapForUserName = self.RestrictMapForUserName
+    end
+    return mapItemDetails
 end

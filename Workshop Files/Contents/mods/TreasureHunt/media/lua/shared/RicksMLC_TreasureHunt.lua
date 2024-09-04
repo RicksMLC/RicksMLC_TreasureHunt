@@ -454,6 +454,7 @@ end
 
 function RicksMLC_TreasureHunt:FinishHunt(bError)
     self.ModData.Finished = true
+    self.Finished = true
     self:SaveModData()
     if bError then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:FinishHunt() Finished in ERROR state - something went wrong.")

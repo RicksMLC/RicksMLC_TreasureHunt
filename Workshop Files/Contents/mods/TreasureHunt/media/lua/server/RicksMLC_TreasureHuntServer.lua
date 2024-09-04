@@ -46,7 +46,7 @@ function RicksMLC_TreasureHuntServer:HandleClientOnHitZombie(player, character)
     end
     if self.ModData.CurrentMapNum ~= self.ModData.LastSpawnedMapNum then
         mapItemDetails = self:AddNextMapToZombie(nil, true, nil)
-
+        mapItemDetails = self:ApplyRestrictToPlayer(mapItemDetails)
         self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum
         self:SaveModData()
     end

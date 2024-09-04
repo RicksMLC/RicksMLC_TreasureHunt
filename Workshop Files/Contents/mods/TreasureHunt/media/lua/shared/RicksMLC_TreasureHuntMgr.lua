@@ -381,12 +381,16 @@ function RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart()
     triggerEvent("RicksMLC_TreasureHuntMgr_InitDone") 
 end
 
+function RicksMLC_TreasureHuntMgr:CheckAndSetOnHitZombie(clientTreasureHunt)
+    local checkResult = clientTreasureHunt:CheckIfNewMapNeeded(getPlayer()) -- Note: This is a client-only function
+    if checkResult.NewMapNeeded then
+        self:SetOnHitZombieForNewMap(clientTreasureHunt)
+    end
+end
+
 function RicksMLC_TreasureHuntMgr:HandleOnAddTreasureHunt(newTreasureHunt)
     -- Override this on the server and client.
-    local checkResult = newTreasureHunt:CheckIfNewMapNeeded(getPlayer()) -- Note: This is a client-only function
-    if checkResult.NewMapNeeded then
-        self:SetOnHitZombieForNewMap(newTreasureHunt)
-    end
+    self:CheckAndSetOnHitZombie(newTreasureHunt)
 end
 
 function RicksMLC_TreasureHuntMgr.OnAddTreasureHunt(newTreasureHunt)

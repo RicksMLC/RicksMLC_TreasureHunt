@@ -223,7 +223,8 @@ function RicksMLC_TreasureHuntMgrClient:HandleOnMapItemsGenerated(args)
             for i, treasureHunt in ipairs(self.TreasureHunts) do
                 if treasureHunt.Name == mapItemDetails.name then
                     treasureHunt:UpdateTreasureHuntMap(mapItemDetails)
-                    if getPlayer():getUsername() == args.playerUsername then
+                    if (not mapItemDetails.RestrictMapForUserName and getPlayer():getUsername() == args.playerUsername)
+                     or getPlayer():getUsername() == mapItemDetails.RestrictMapForUserName then
                         -- TODO: Allow this for the "goofy" game mode
                         local mapItem = self:RecreateMapItem(mapItemDetails)
                         treasureHunt:AddMapToWorld(mapItem, self.HitZombie, getPlayer():getSquare())
@@ -242,11 +243,13 @@ function RicksMLC_TreasureHuntMgrClient:RecordFoundTreasure(huntId, foundMapNum)
 end
 
 function RicksMLC_TreasureHuntMgrClient:CheckAndSetOnHitZombie(clientTreasureHunt)
-    local checkResult = clientTreasureHunt:CheckIfNewMapNeeded(getPlayer()) -- Note: This is a client-only function
-    if checkResult.NewMapNeeded then
-        -- TODO: MP: Check this is the correct player
-        self:SetOnHitZombieForNewMap(clientTreasureHunt)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:CheckAndSetOnHitZombie()")
+    if not clientTreasureHunt:IsCorrectPlayer(getPlayer()) then 
+        DebugLog.log(DebugType.Mod, "    Not the correct player: restricted to "  .. clientTreasureHunt.RestrictMapForUserName .. " returning.")
+        return
     end
+
+    RicksMLC_TreasureHuntMgr.CheckAndSetOnHitZombie(self, clientTreasureHunt)
 end
 
 function RicksMLC_TreasureHuntMgrClient:AddTreasureHunt(treasureHuntDefn)
@@ -256,6 +259,13 @@ function RicksMLC_TreasureHuntMgrClient:AddTreasureHunt(treasureHuntDefn)
     local args = {treasureHuntDefn = treasureHuntDefn}
     sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrServer", "AddTreasureHuntFromClient", args)
 end
+
+function RicksMLC_TreasureHuntMgrClient:HandleOnAddTreasureHunt(newTreasureHunt)
+    -- Override and mask on the client.  The base class uses this for setting the Wait to hit zombie when the AddTreasureHunt() call adds the hunt.
+    -- The check on the MP client is done when the server sends the message to all clients that the new treasure hunt is added.
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:HandleOnAddTreasureHunt() masked out on mgr client")
+end
+
 
 function RicksMLC_TreasureHuntMgrClient:AddTreasureHuntFromServer(newTreasureHunt)
     -- Add this new treasure hunt to the mgr client.
@@ -270,13 +280,13 @@ function RicksMLC_TreasureHuntMgrClient:AddTreasureHuntFromServer(newTreasureHun
         return
     end
     -- Update the client treasure hunt info with the server info (ModData etc)
-    clientTreasureHunt.ModData = newTreasureHunt.ModData
-    clientTreasureHunt.RestrictMapForUser = newTreasureHunt.RestrictMapForUser -- This is for multplayer to restrict the map generation to this user.  If nil anyone can generate?
-    clientTreasureHunt.RestrictMapForUserName = newTreasureHunt.RestrictMapForUserName
+    self.TreasureHunts[#self.TreasureHunts].ModData = newTreasureHunt.ModData
+    self.TreasureHunts[#self.TreasureHunts].RestrictMapForUser = newTreasureHunt.RestrictMapForUser -- This is for multplayer to restrict the map generation to this user.  If nil anyone can generate?
+    self.TreasureHunts[#self.TreasureHunts].RestrictMapForUserName = newTreasureHunt.RestrictMapForUserName
 
     -- check if a zombie needs hitting...
     RicksMLC_THSharedUtils.DumpArgs(clientTreasureHunt, 0, "Added clientTreasureHunt")
-    self:CheckAndSetOnHitZombie(clientTreasureHunt)
+    self:CheckAndSetOnHitZombie(self.TreasureHunts[#self.TreasureHunts])
 end
 
 function RicksMLC_TreasureHuntMgrClient:AddInitialTreasureHuntsFromServer(args)
@@ -289,13 +299,13 @@ function RicksMLC_TreasureHuntMgrClient:AddInitialTreasureHuntsFromServer(args)
 end
 
 function RicksMLC_TreasureHuntMgrClient:FinishTreasureHunt(args)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:FinishTreasureHunt() '" .. args.Name .. "' user: " .. args.PlayerUsername)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:FinishTreasureHunt() '" .. args.Name .. "' user: " .. tostring(args.PlayerUsername))
 
     for i, treasureHunt in ipairs(self.TreasureHunts) do
         if treasureHunt.Name == args.Name then
             if treasureHunt.Finished then return end
 
-            treasureHunt:FinishHunt()
+            treasureHunt:FinishHunt(false, args.PlayerUsername)
             return
         end
     end
@@ -366,8 +376,6 @@ function RicksMLC_TreasureHuntMgrClient.OnConnected()
     end
     DebugLog.log(DebugType.Mod, msg)
 
-    -- Does the initial synch happen here or OnGameStart?
-    --sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrClient", "RequestTreasureHuntsInfo", {})
     RicksMLC_TreasureHuntMgr.Instance().serverTreasureHuntsCache:ForceCacheUpdate()
     RicksMLC_TreasureHuntMgr.Instance().serverMgrStatusCache:ForceCacheUpdate()
 end
@@ -439,32 +447,12 @@ Events.RicksMLC_TreasureHuntMgr_PreInit.Add(TreasureHuntMgrPreInit)
 
 
 -- Use this for testing/prototyping only
-function RicksMLC_TreasureHuntMgrClient:TestNewTreasureHunt()
-    local treasureHuntDefn = {
-        Name = "TestF9",
-        Town = "Greenport",
-        Treasures = {
-            { Item =  "Plonkies", Barricades = 30, Zombies = 0 }
-        },
-        Player = "RicksMLC"
-    }
-    local huntId = 1
-    local tempRestrictToPlayer = getPlayer()
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:NewTreasureHunt(): '" .. treasureHuntDefn.Name .. "'")
-    local treasureHunt = RicksMLC_TreasureHuntClient:new(treasureHuntDefn, huntId)
 
-    if tempRestrictToPlayer then
-        RicksMLC_THSharedUtils.DumpArgs(treasureHunt, 0, "RicksMLC_TreasureHuntMgrServer:NewTreasureHunt() tempRestrictToPlayer treasureHunt")
-        treasureHunt:RestrictMapToPlayer(tempRestrictToPlayer)
-        tempRestrictToPlayer = nil
-    end
-    return treasureHunt
-end
 -- FIXME: comment out
-function RicksMLC_TreasureHuntMgrClient.OnKeyPressed(key)
-    if key == Keyboard.KEY_F10 then
-       RicksMLC_TreasureHuntMgr.Instance():TestNewTreasureHunt()
-    end
-end
+-- function RicksMLC_TreasureHuntMgrClient.OnKeyPressed(key)
+--     if key == Keyboard.KEY_F10 then
+--
+--     end
+-- end
 -- Commented out code - uncomment to make temp test
 --Events.OnKeyPressed.Add(RicksMLC_TreasureHuntMgrClient.OnKeyPressed)

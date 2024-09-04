@@ -15,8 +15,8 @@ function RicksMLC_TreasureHuntClient:new(treasureHuntDefn, huntId)
 end
 
 function RicksMLC_TreasureHuntClient:UpdateTreasureHuntMap(mapItemDetails)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:UpdateTreasureHuntMap() self.CurrentMapNum: " .. tostring(self.CurrentMapNum) .. " mapItemDetails.i: " .. tostring(mapItemDetails.i))
-    self.CurrentMapNum = mapItemDetails.i
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:UpdateTreasureHuntMap() self.CurrentMapNum: " .. tostring(self.ModData.CurrentMapNum) .. " mapItemDetails.i: " .. tostring(mapItemDetails.i))
+    self.ModData.CurrentMapNum = mapItemDetails.i
     self.ModData.Maps = mapItemDetails.Maps
     self.ModData.LastSpawnedMapNum = self.ModData.CurrentMapNum
     self:AddStashFromServer()
@@ -40,17 +40,26 @@ function RicksMLC_TreasureHuntClient:AddStashFromServer()
     end
 end
 
-function RicksMLC_TreasureHuntClient:FinishHunt(bError, username)
-    if not username then 
-        -- Dodgy hack: If there is no username then this client is the finder and username is not needed. So call the base method.
+function RicksMLC_TreasureHuntClient:FinishHunt(bError, playerUsername)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntClient:FinishHunt() Player: " .. tostring(playerUsername))
+    if not playerUsername or not self.TreasureHuntDefn.Player or self.TreasureHuntDefn.Player == getPlayer():getUsername() then 
+        -- Dodgy hack: If there is no playerUsername then this client is the finder and username is not needed. So call the base method.
         RicksMLC_TreasureHunt.FinishHunt(self, bError)
         return
     end
+    playerUsername = playerUsername or getPlayer():getUsername() -- Dodgy Hack cont'd: Assumes if no playerUsername then this is the client which is finishing the treasure hunt.
     self.ModData.Finished = true
     self.Finished = true
+    self.FinishedBy = playerUsername
+    self:SaveModData()
     if bError then
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntClient:FinishHunt() Finished in ERROR state - something went wrong.")
         return
     end
-    triggerEvent("RicksMLC_TreasureHuntClient_Finished", self.TreasureHuntDefn, username)
+    triggerEvent("RicksMLC_TreasureHuntClient_Finished", self.TreasureHuntDefn, playerUsername)
+end
+
+function RicksMLC_TreasureHuntClient:IsValidAddNextMapToZombie(character)
+    return RicksMLC_TreasureHunt.IsValidAddNextMapToZombie(self, character)
+       and self:IsCorrectPlayer(getPlayer())
 end
