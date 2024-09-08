@@ -173,7 +173,9 @@ function RicksMLC_TreasureHuntMgrClient:SetWaitingToHitZombie(isWaiting, treasur
             end
         end
     else
-        treasureHunt:RestrictMapToPlayer(player)
+        if treasureHunt:GetMode() ~= "ChaosRace" then
+            treasureHunt:RestrictMapToPlayer(player)
+        end
     end
 
     -- FIXME: Pass the player restriction to the server
@@ -190,7 +192,7 @@ function RicksMLC_TreasureHuntMgrClient:HandleOnHitZombie(zombie, character, bod
     self.HitZombie = zombie
     
     local args = {zombie = zombie, character = character, bodyPartType = bodyPartType, handWeapon = handWeapon}
-    RicksMLC_THSharedUtils.DumpArgs(args, 0, "Sending ClientOnHitZombie args")
+    --RicksMLC_THSharedUtils.DumpArgs(args, 0, "Sending ClientOnHitZombie args")
     sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrServer", "ClientOnHitZombie", args)
     self:SetWaitingToHitZombie(false)
 end
@@ -213,19 +215,35 @@ function RicksMLC_TreasureHuntMgrClient:RecreateMapItem(mapItemDetails)
     return mapItem
 end
 
+function RicksMLC_TreasureHuntMgrClient:IsMapItemForPlayer(treasureHunt, mapItemDetails, args)
+    -- A mapItem is for a player if:
+    --  The map has a RestrictmapForUserName and the player username matches
+    --  The server args.playerUsername matches the player username (the player was the initiator of the message to the server and this is the response to the same player)
+    --  The treasureHunt.GetMode() forces map generation. eg:  Mode == "ChaosRace" (the "goofy" game mode)
+
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:IsMapItemForPlayer() treasureHuntMap:GetMode(): " .. tostring(treasureHunt:GetMode()))
+
+    if treasureHunt:GetMode() == "ChaosRace" then return true end
+
+    if not mapItemDetails.RestrictMapForUserName and not args.playerUsername then return true end
+
+    if mapItemDetails.RestrictMapForUserName == getPlayer():getUsername() then return true end
+
+    if args.playerUsername == getPlayer():getUsername() then return true end
+
+    return false
+end
 
 function RicksMLC_TreasureHuntMgrClient:HandleOnMapItemsGenerated(args)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.HandleOnMapItemsGenerated() for " .. args.playerUsername)
-    RicksMLC_THSharedUtils.DumpArgs(args, 0, "HandleOnMapItemsGenerated args")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.HandleOnMapItemsGenerated() for " .. args.playerUsername)
+    --RicksMLC_THSharedUtils.DumpArgs(args, 0, "HandleOnMapItemsGenerated args")
 
     if args.mapItemList then
         for _, mapItemDetails in ipairs(args.mapItemList) do
             for i, treasureHunt in ipairs(self.TreasureHunts) do
                 if treasureHunt.Name == mapItemDetails.name then
                     treasureHunt:UpdateTreasureHuntMap(mapItemDetails)
-                    if (not mapItemDetails.RestrictMapForUserName and getPlayer():getUsername() == args.playerUsername)
-                     or getPlayer():getUsername() == mapItemDetails.RestrictMapForUserName then
-                        -- TODO: Allow this for the "goofy" game mode
+                    if self:IsMapItemForPlayer(treasureHunt, mapItemDetails, args) then
                         local mapItem = self:RecreateMapItem(mapItemDetails)
                         treasureHunt:AddMapToWorld(mapItem, self.HitZombie, getPlayer():getSquare())
                     end
@@ -270,7 +288,7 @@ end
 function RicksMLC_TreasureHuntMgrClient:AddTreasureHuntFromServer(newTreasureHunt)
     -- Add this new treasure hunt to the mgr client.
     -- Populate the client reflected manager with the newTreasureHunt.
-    RicksMLC_THSharedUtils.DumpArgs(newTreasureHunt, 0, "RicksMLC_TreasureHuntMgrClient:AddTreasureHuntFromServer() newTreasureHunt")
+    --RicksMLC_THSharedUtils.DumpArgs(newTreasureHunt, 0, "RicksMLC_TreasureHuntMgrClient:AddTreasureHuntFromServer() newTreasureHunt")
     local treasureHuntDefn = newTreasureHunt.TreasureHuntDefn
 
     -- Call the base class
@@ -285,7 +303,7 @@ function RicksMLC_TreasureHuntMgrClient:AddTreasureHuntFromServer(newTreasureHun
     self.TreasureHunts[#self.TreasureHunts].RestrictMapForUserName = newTreasureHunt.RestrictMapForUserName
 
     -- check if a zombie needs hitting...
-    RicksMLC_THSharedUtils.DumpArgs(clientTreasureHunt, 0, "Added clientTreasureHunt")
+    --RicksMLC_THSharedUtils.DumpArgs(self.TreasureHunts[#self.TreasureHunts], 0, "Added clientTreasureHunt")
     self:CheckAndSetOnHitZombie(self.TreasureHunts[#self.TreasureHunts])
 end
 
@@ -328,7 +346,7 @@ function RicksMLC_TreasureHuntMgrClient.OnServerCommand(moduleName, command, arg
     if command == "SetOnHitZombieForNewMap" then
         if RicksMLC_TreasureHuntMgr.Instance().IsWaitingToHitZombie then return end
         -- FIXME: set for only the designated player
-        RicksMLC_THSharedUtils.DumpArgs(args, 0, command .. " args")
+        --RicksMLC_THSharedUtils.DumpArgs(args, 0, command .. " args")
         return
     end
     if command == "ServerResponseToOnHitZombie" then
@@ -447,12 +465,12 @@ Events.RicksMLC_TreasureHuntMgr_PreInit.Add(TreasureHuntMgrPreInit)
 
 
 -- Use this for testing/prototyping only
-
 -- FIXME: comment out
 -- function RicksMLC_TreasureHuntMgrClient.OnKeyPressed(key)
 --     if key == Keyboard.KEY_F10 then
---
+--         local args = {}
+--         sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrServer", "SimulateOnHitZombie", args)
 --     end
 -- end
--- Commented out code - uncomment to make temp test
---Events.OnKeyPressed.Add(RicksMLC_TreasureHuntMgrClient.OnKeyPressed)
+-- -- Commented out code - uncomment to make temp test
+-- Events.OnKeyPressed.Add(RicksMLC_TreasureHuntMgrClient.OnKeyPressed)

@@ -171,8 +171,11 @@ RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
         Decorators = {[2] = "FluffyFootDecorator"}
     },
 
+--  FIXME: Commented out test map. Uncomment to have a test spawn map:
+    { Name = "TEST_MAPSPAWN", Treasures = {"Mov_MannequinFemale"}, Mode = "ChaosRace" },
+
     -- FIXME: Comment out for now to limit the test to Spiffo and Friends
-    -- {Name = "Maybe Helpful", Town = "SampleEkronTown", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}, Decorators = {[1] = "SampleGenMagDecorator"}}, -- GenMag
+    --{Name = "Maybe Helpful", Town = "SampleEkronTown", Barricades = 90, Zombies = 30, Treasures = {"ElectronicsMag4"}, Decorators = {[1] = "SampleGenMagDecorator"}}, -- GenMag
     -- {Name = "Metalworker Kit", 
     --  Barricades = 60,
     --  Town = "Rosewood",

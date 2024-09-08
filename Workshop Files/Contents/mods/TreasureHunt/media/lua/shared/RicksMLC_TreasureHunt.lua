@@ -73,18 +73,22 @@ function RicksMLC_TreasureHunt:new(treasureHuntDefn, huntId)
             v = v.Item
         end
         o.TreasureLookup[v] = i
+        -- Dodgy hack: mannequines in MP spawn in the annoated map as something other than Mov_MannequinFemale and Mov_MannequinMale
+        -- It appears the MP spawn is setting the getType() to the WorldSpriteName
+        if v == "Mov_MannequinFemale" then
+            o.TreasureLookup["location_shop_mall_01_66"] = i
+        end
+        if v == "Mov_MannequinMale" then
+            o.TreasureLookup["location_shop_mall_01_69"] = i
+        end
+
     end
 
     o.HuntId = huntId
     o.MapIDLookup = {}
-
     o.ModData = nil
-
     o.Initialised = false
     o.Finished = false
-
-    -- FIXME: Move to the client/sever subclasses
-    --o.RestrictMapForUser = nil -- This is for multplayer to restrict the map generation to this user.  If nil anyone can generate?
 
     return o
 end
@@ -309,17 +313,17 @@ function RicksMLC_TreasureHunt:AddStashMap(treasureModData, i)
     local stashMapName = self:GenerateMapName(i)
     local stashDesc = RicksMLC_StashDescLookup.Instance():StashLookup(stashMapName)
     if not stashDesc then
-        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashMap() Adding stash for " .. stashMapName)
+        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashMap() Adding stash for " .. stashMapName)
         self:AddStashToStashUtil(treasureModData, i, stashMapName)
     else
-        DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
-        RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
+        --DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
+        --RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
     end
     self:UpdateLootMapsInitFn(stashMapName, self.HuntId, i)
 end
 
 function RicksMLC_TreasureHunt:AddStashMaps()
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddStashMaps()")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddStashMaps()")
     for i, treasureModData in ipairs(self.ModData.Maps) do
         -- Check if the stash already exists
         self:AddStashMap(treasureModData, i)
@@ -338,7 +342,7 @@ function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown, optio
             self.ModData.Maps[i].Building = self:getNearestBuildingDef(self.ModData.Maps[i].buildingCentreX, self.ModData.Maps[i].buildingCentreY)
         end
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GenerateTreasure() treasure: " .. ((isTable(treasure) and treasure.Item) or treasure) .. " " .. self.ModData.Maps[i].Town.Town)
-        RicksMLC_THSharedUtils.DumpArgs(self.ModData.Maps[i], 0, "Existing treasureModData")
+        --RicksMLC_THSharedUtils.DumpArgs(self.ModData.Maps[i], 0, "Existing treasureModData")
     else
         local town = nil
         if optionalTown then
@@ -393,6 +397,10 @@ function RicksMLC_TreasureHunt:GeneratePastTreasures()
     end
 end
 
+function RicksMLC_TreasureHunt:GetMode()
+    return self.TreasureHuntDefn.Mode
+end
+
 function RicksMLC_TreasureHunt:LoadModData()
     local modData = getGameTime():getModData()["RicksMLC_TreasureHunt"]
     if not modData then
@@ -401,15 +409,17 @@ function RicksMLC_TreasureHunt:LoadModData()
     end
     self.ModData = getGameTime():getModData()["RicksMLC_TreasureHunt"][self.Name]
     if not self.ModData then
-        self.ModData = {CurrentMapNum = 0, Maps = {}, Finished = false, LastSpawnedMapNum = 0, 
+        self.ModData = {CurrentMapNum = 0, Maps = {}, Finished = false, LastSpawnedMapNum = 0, Mode = nil,
                         Statistics = {Start = nil, End = nil, Kills = nil, Deaths = nil}}
     end
+    self.Finished = self.ModData.Finished -- TODO: Yuck: I really dislike this ModData data replication... but no time to refactor now.
 end
 
 function RicksMLC_TreasureHunt:SaveModData()
     if not getGameTime():getModData()["RicksMLC_TreasureHunt"] then
         getGameTime():getModData()["RicksMLC_TreasureHunt"] = {}    
     end
+    self.ModData.Finished = self.Finished -- TODO: bleh.
     getGameTime():getModData()["RicksMLC_TreasureHunt"][self.Name] = self.ModData
 end
 
@@ -481,7 +491,7 @@ end
 -- Generate the past treasure data so any old maps can still be read.
 -- Initialise the stash maps that correspond with the treasure data.
 function RicksMLC_TreasureHunt:InitTreasureHunt()
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.InitTreasureHunt()")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.InitTreasureHunt()")
     self:LoadModData()
     self:GeneratePastTreasures()
     if not self.ModData.Maps then
@@ -490,7 +500,7 @@ function RicksMLC_TreasureHunt:InitTreasureHunt()
     end
     self:SaveModData()
     self.Initialised = true
-    RicksMLC_THSharedUtils.DumpArgs(self, 0, "InitTreasureHunt post SaveModData()")
+    --RicksMLC_THSharedUtils.DumpArgs(self, 0, "InitTreasureHunt post SaveModData()")
     self:AddStashMaps()
     -- The reinit is necessary when adding a stash after the game is started.
     -- If the StashSystem is not reinitialised the StashSystem.getStash() not find the stash, even if the
@@ -538,12 +548,13 @@ end
 -- AddMapToWorld: Override on the server to do nothing as it is meaninless to add the mapItem on the server side.
 function RicksMLC_TreasureHunt:AddMapToWorld(mapItem, zombie, gridSquare)
     if not zombie then
+        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:AddMapToWorld() No Zombie. Add to gridSquare")
         gridSquare:AddWorldInventoryItem(mapItem, ZombRand(0.1, 0.5), ZombRand(0.1, 0.5), 0)
         return
     end
 
     if zombie:isDead() then
-        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() isDead. map: " .. mapItem:getDisplayName())
+        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() isDead. map: " .. mapItem:getDisplayName())
         --FIXME: This may not work if the zombie is converted to IsoDeadBody.  zombie:getInventory():addItem(mapItem)
         -- so try to find the body
         local bodies = zombie:getSquare():getDeadBodys()
@@ -566,10 +577,26 @@ function RicksMLC_TreasureHunt:AddMapToWorld(mapItem, zombie, gridSquare)
             end
         end
     else
-        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() not dead")
+        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() not dead")
         zombie:addItemToSpawnAtDeath(mapItem)
     end
 end
+
+function RicksMLC_TreasureHunt:MakeMapItemDetails(mapItem)
+    local mapItemDetails = {
+        mapItem = mapItem,
+        stashMapName = mapItem:getMapID(), 
+        huntId = self.HuntId, 
+        i = self.ModData.CurrentMapNum, 
+        name = self.Name,
+        displayName = mapItem:getDisplayName(),
+        mode = self:GetMode(), 
+        treasureModData = self.ModData.Maps[self.ModData.CurrentMapNum],
+        Maps = self.ModData.Maps
+    } 
+    return mapItemDetails
+end
+
 
 -- AddNextMapToZombie: If the zombie is nil, add to the given gridSquare.
 -- Note: On the server side the zombie and gridSquare will be nil.  See AddMapToWorld() override.
@@ -592,17 +619,8 @@ function RicksMLC_TreasureHunt:AddNextMapToZombie(zombie, doStash, gridSquare)
         return nil
     end
     self:SaveModData()
-    local mapItemDetails = {
-        mapItem = mapItem,
-        stashMapName = mapItem:getMapID(), 
-        huntId = self.HuntId, 
-        i = self.ModData.CurrentMapNum, 
-        name = self.Name,
-        displayName = mapItem:getDisplayName(),
-        treasureModData = self.ModData.Maps[self.ModData.CurrentMapNum],
-        Maps = self.ModData.Maps
-    } 
-    RicksMLC_THSharedUtils.DumpArgs(mapItemDetails, 0, "RicksMLC_TreasureHunt:AddNextMapToZombie() return:")
+    local mapItemDetails = self:MakeMapItemDetails(mapItem)
+    --RicksMLC_THSharedUtils.DumpArgs(mapItemDetails, 0, "RicksMLC_TreasureHunt:AddNextMapToZombie() return:")
     return mapItemDetails
 end
 
@@ -615,6 +633,7 @@ function RicksMLC_TreasureHunt:GetCurrentTreasureHuntInfo()
         lastSpawnedMapNum = self.ModData.LastSpawnedMapNum,
         isNewMapNeeded = self:IsNewMapNeeded(),
         finished = self.ModData.Finished,
+        mode = self:GetMode(),
         treasureHuntDefn = self.TreasureHuntDefn,
         treasureModData = modData,
         modData = self.ModData}

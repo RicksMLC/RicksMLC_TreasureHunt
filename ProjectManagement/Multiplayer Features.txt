@@ -11,9 +11,13 @@ Multiplayer Features.txt
     [ ] Co-op
     [-] Race: Do this first
         [-] Phase 1: Utter Chaos Race!
-            [ ] Each player gets the same hunt
-            [ ] Each time a player finds an item the next map is spawned on each player
-                Sage special items: The victor is the first person or team to assemble their mannequin with the collected items as offerings.
+            [+] Chat input: "Mode=ChaosRace", so TreasureHunt needs a "Mode"
+            [+] Each player gets the same hunt
+            [+] Each time a player finds an item the next map is spawned on each player
+                End state: Sage special items: The victor is the first person or team to assemble their mannequin with the collected items as offerings.
+            [ ] All players are notified when any player finds an item on the treasure hunt.
+            [ ] 
+
         [ ] Phase 2: Time trial
             [ ] Each player gets their own map
             [ ] Keep time score for each player.

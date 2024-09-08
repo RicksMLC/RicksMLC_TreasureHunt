@@ -92,7 +92,7 @@ function RicksMLC_TreasureHuntDistributions:AddTreasureToDistribution(treasure, 
     local dist = SuburbsDistributions
     local tmpTable = dist[distKey]
     if tmpTable then
-        RicksMLC_THSharedUtils.DumpArgs(tmpTable, 0, "AddTreasureToDist SuburbsDistributions '" .. distKey .. "'")
+        --RicksMLC_THSharedUtils.DumpArgs(tmpTable, 0, "AddTreasureToDist SuburbsDistributions '" .. distKey .. "'")
     end
     DebugLog.log(DebugType.Mod, "AddTreasureToDist(itemType) End")
 end

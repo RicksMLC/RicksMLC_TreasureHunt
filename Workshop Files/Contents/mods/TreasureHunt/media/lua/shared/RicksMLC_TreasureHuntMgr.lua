@@ -199,14 +199,14 @@ function RicksMLC_TreasureHuntMgr:AddTreasureHunt(treasureHuntDefn, isFromModDat
     if self:IsDuplicate(treasureHuntDefn, self.TreasureHunts) then return end
 
     self.TreasureHunts[#self.TreasureHunts+1] = self:NewTreasureHunt(treasureHuntDefn, #self.TreasureHunts+1)
-    RicksMLC_THSharedUtils.DumpArgs(self.TreasureHunts[#self.TreasureHunts], 0, "RicksMLC_TreasureHuntMgr:AddTreasureHunt() before InitTreasureHunt()")
+    --RicksMLC_THSharedUtils.DumpArgs(self.TreasureHunts[#self.TreasureHunts], 0, "RicksMLC_TreasureHuntMgr:AddTreasureHunt() before InitTreasureHunt()")
     self.TreasureHunts[#self.TreasureHunts]:InitTreasureHunt()
 
     if not isFromModData then 
         -- Avoid infinite loop/leak by not adding to the ModData
         self:UpdateTreasureHuntDefns(treasureHuntDefn)
     end
-    RicksMLC_THSharedUtils.DumpArgs(self.TreasureHunts[#self.TreasureHunts], 0, "RicksMLC_TreasureHuntMgr:AddTreasureHunt() after InitTreasureHunt()")
+    --RicksMLC_THSharedUtils.DumpArgs(self.TreasureHunts[#self.TreasureHunts], 0, "RicksMLC_TreasureHuntMgr:AddTreasureHunt() after InitTreasureHunt()")
     if not self.BulkLoading then
         -- This is a single treasure hunt, probably added from an external mod like ChatTreasure 
         self:HandleOnAddTreasureHunt(self.TreasureHunts[#self.TreasureHunts])
@@ -398,10 +398,10 @@ function RicksMLC_TreasureHuntMgr.OnAddTreasureHunt(newTreasureHunt)
 end
 
 -- Use this for testing/prototyping only
-function RicksMLC_TreasureHuntMgr.OnKeyPressed(key)
-    if key == Keyboard.KEY_F10 then
-    end
-end
+-- function RicksMLC_TreasureHuntMgr.OnKeyPressed(key)
+--     if key == Keyboard.KEY_F10 then
+--     end
+-- end
 
 -- Commented out code - uncomment to make temp test
 --Events.OnKeyPressed.Add(RicksMLC_TreasureHuntMgr.OnKeyPressed)

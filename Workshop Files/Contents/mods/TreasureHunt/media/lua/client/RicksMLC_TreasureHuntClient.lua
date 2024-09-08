@@ -36,7 +36,7 @@ function RicksMLC_TreasureHuntClient:AddStashFromServer()
         StashSystem.reinit()
     else
         DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
-        RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
+        --RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
     end
 end
 

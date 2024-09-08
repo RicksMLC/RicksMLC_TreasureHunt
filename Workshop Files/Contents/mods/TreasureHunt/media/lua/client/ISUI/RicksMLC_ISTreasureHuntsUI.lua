@@ -68,8 +68,8 @@ end
 
 function ISRicksMLC_TreasureHuntPanel:DrawInvItemWithIcon(item, x, y, preLabel, postLabel)
     local tex = item:getTex()
-    local iw = tex:getWidth()
-    local ih = tex:getHeight()
+    local iw = tex:getWidth() -- typically 32
+    local ih = tex:getHeight() -- typically 29
     local preLabelLen = dispTextLen(preLabel, UIFontSmall)
     local postLabelLen = dispTextLen(postLabel, UIFontSmall)
     local dispNameLen = dispTextLen(item:getDisplayName(), UIFontSmall)
@@ -136,6 +136,7 @@ function ISRicksMLC_TreasureHuntPanel:DrawTreasureHuntDefn(treasureHuntDefn, x, 
     -- Name
     -- Treasures | Treasure?
     -- Zombies
+    -- Mode
     self:drawText("treasureHuntDefn:", x, y, 1, 1, 1, 1, UIFont.NewSmall)
     y = y + lineHeight
     x = self.xMargin + self.tab
@@ -148,14 +149,8 @@ function ISRicksMLC_TreasureHuntPanel:DrawTreasureHuntDefn(treasureHuntDefn, x, 
         elseif k == "Name" then
             self:drawText(k .. ": " .. tostring(v), x, y, 1, 1, 1, 1, UIFont.NewSmall)
             y = y + lineHeight
-            if y == nil then
-                DebugLog.log(DebugType.Mod, "Name y is nil")
-            end
         else
             y = self:DrawArgList(k, v, x, y, lineHeight)
-            if y == nil then
-                DebugLog.log(DebugType.Mod, k .. " y is nil")
-            end
         end
     end
     return y
