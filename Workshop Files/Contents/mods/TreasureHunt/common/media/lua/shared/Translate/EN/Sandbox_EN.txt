@@ -1,0 +1,6 @@
+Sandbox_EN = {
+    Sandbox_RicksMLC_TreasureHunt = "Rick's MLC Treasure Hunt",
+
+    Sandbox_RicksMLC_TreasureHunt_SamplesOn = "Samples On",
+    Sandbox_RicksMLC_TreasureHunt_SamplesOn_tooltip = "Include the sample treasure hunts at startup",
+}

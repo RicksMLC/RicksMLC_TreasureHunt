@@ -1,0 +1,6 @@
+-- Rick's MLC Template
+-- Encoding: ANSI
+
+IGUI_ES {
+	IGUI_RicksMLC_TreasureHunt = "�Ow! �Mi cabeza!",
+},

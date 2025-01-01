@@ -1,0 +1,10 @@
+-- Rick's MLC Treasure Hunt
+-- Encoding: UTF-8
+
+ContextMenu_EN {
+	ContextMenu_RicksMLCShowTreasureHuntsWindow = "Rick's MLC Treasure Hunts",
+	ContextMenu_RicksMLCShowTreasureHuntsWindow_tooltip = "List of treasure hunts in the treasure hunt mgr",
+
+	ContextMenu_RicksMLCShowServerTreasureHuntsWindow = "Rick's MLC Treasure Hunts Server",
+	ContextMenu_RicksMLCShowServerTreasureHuntsWindow_tooltip = "List of treasure hunts in the server treasure hunt mgr"
+},

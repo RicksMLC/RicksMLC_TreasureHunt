@@ -1,6 +1,6 @@
 version=0.1
-title=Rick's MLC Treasure Hunt (MP TEST)
-description=There is a trail of treasures in Knox County.  This is the Multiplayer Test Version
+title=Rick's MLC Treasure Hunt (MP Beta)
+description=There is a trail of treasures in Knox County.  This is the Multiplayer Beta Version
 description=This mod is a framework for adding treasure hunts to Project Zomboid.  A treasure hunt is a sequence of generated treasure maps which uses the Annotated Map functionality of the vanilla game.  Included in this mod are sample treasure hunts to demonstrate the how to define treasure hunts.  Treasure hunt locations (Stash buildings) can be set to random or specific Towns.   The Treasure Hunt mod contains the following Towns: Riverside, Westpoint, MarchRidge, Muldraugh and Louisville 1 to 9.  Custom town regions can be added in your mod to be used in your treasure hunt definitions, and the town of Ekron is added in the sample to show how this is done.  The Stash building will be chosen at random in the specified town or a random town from the list of known towns.
 description=
 description=Play Mechanics:
@@ -14,7 +14,7 @@ description=Languages supported:English and (possibly badly translated): Spanish
 description=
 description=NOTE: Issues: There may be some buildings chosen by the treasure hunt which have errors when the "Stash" is spawned.  So far the only building with this issue is the school at Rosewood, which threw a Java exception while trying to barricade an IsoWindow.  This building has been set to not generate barricades to avoid this issue.
 description=
-description=This mod is now Feature Complete for Single Player.  No Multiplayer support yet.
+description=This mod is now Feature Complete for Multiplayer.
 
 tags=Build 41
 visibility=public
