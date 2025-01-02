@@ -114,11 +114,12 @@ end
 
 --------------------------------------
 
--- Copied from java class AmbientStreamManager
+-- Note that AmbientStreamManager is not on the server in vanilla.
+-- See function RicksMLC_TreasureHuntMgrServer.OnServerStarted() which instantiates one on the server
 function RicksMLC_MapUtils.getNearestBuildingDef(x, y, ...)
-    local closestXY = Vector2f:new(1000, 1000)
-    return AmbientStreamManager.instance:getNearestBuilding(x,  y, closestXY)
+    local nearestBuildingDef = AmbientStreamManager.getNearestBuilding(x, y, Vector2f.new())
 end
+-- Copied from java class AmbientStreamManager
 -- function RicksMLC_MapUtils.getNearestBuildingDef(x, y, ...)
 --     local isoWorldInstance = IsoWorld.instance
 --     local metaGrid = IsoWorld.instance:getMetaGrid();
