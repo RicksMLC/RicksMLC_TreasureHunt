@@ -32,7 +32,7 @@ StashDebug.onClick = function(self, button)
                 return
             end
         else
-            map = InventoryItemFactory.CreateItem(itemName);
+            map = instanceItem(itemName);
         end
         StashSystem.doStashItem(self.selectedStash, map);
         getPlayer():getInventory():AddItem(map);

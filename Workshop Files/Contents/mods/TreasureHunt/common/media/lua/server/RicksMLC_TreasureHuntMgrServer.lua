@@ -58,7 +58,7 @@ end
 
 function RicksMLC_TreasureHuntMgrServer:RecreateMapItem(mapItemDetails)
     -- {mapItem = mapItem, stashMapName = mapItem:getMapID(), huntId = self.HuntId, i = self.ModData.CurrentMapNum}
-    local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
+    local mapItem = instanceItem("Base.RicksMLC_TreasureMapTemplate")
     mapItem:setMapID(mapItemDetails.stashMapName)
     mapItem:setName(mapItemDetails.displayName)-- treasureItem:getDisplayName()
     mapItem:setCustomName(true)

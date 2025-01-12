@@ -107,7 +107,7 @@ function ISRicksMLC_TreasureHuntPanel:DrawItemsWithIcon(label, items, x, y)
     local ih = nil
     local newX = nil
     for i, item in ipairs(items) do
-        local invItem = InventoryItemFactory.CreateItem(item)
+        local invItem = instanceItem(item)
         if invItem then
             x, y, ih = self:DrawInvItemWithIcon(invItem, x, y, preLabel, postLabel)
         end
@@ -195,9 +195,9 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
                     if type(v) == "table" then
                         -- This is the "new" style of treasure definition, which is a list including the item.
                         -- Barricades n, Decorator "name", Item "name", ProceduralDefns {table of loot spawn}, Town {table}, Zombies n
-                        treasureItem = InventoryItemFactory.CreateItem(v.Item)
+                        treasureItem = instanceItem(v.Item)
                     else
-                        treasureItem = InventoryItemFactory.CreateItem(self.treasureHuntInfo.treasureModData.Treasure)
+                        treasureItem = instanceItem(self.treasureHuntInfo.treasureModData.Treasure)
                     end
                     if treasureItem then
                         _, y, ih = self:DrawInvItemWithIcon(treasureItem, x, y, k .. ": ", nil)
@@ -545,6 +545,9 @@ function ISRicksMLC_TreasureHuntsServerUI:close()
     ISRicksMLC_TreasureHuntsServerUI.serverInstance = nil
 end
 
+local function ResetLostMaps()
+    RicksMLC_TreasureHuntMgr.Instance():ResetLostMaps()
+end
 ------------------------------------------------------------
 
 Events.RicksMLC_TreasureHuntMgr_InitDone.Add(ISRicksMLC_TreasureHuntsUI.HandleTreasureHuntUpdate)
@@ -555,7 +558,8 @@ function ISRicksMLC_TreasureHuntsUI.DoContextMenu(player, context, worldobjects,
     local playerObj = getSpecificPlayer(player)
 
     local subMenu = context:getNew(context)
-    local option = subMenu:addOption(getText("ContextMenu_RicksMLCShowTreasureHuntsWindow"), worldobjects, ISRicksMLC_TreasureHuntsUI.openWindow , player)
+
+    local option = subMenu:addOption(getText("ContextMenu_RicksMLCShowTreasureHuntsWindow"), worldobjects, ISRicksMLC_TreasureHuntsUI.openWindow, player)
     local tooltip = ISWorldObjectContextMenu:addToolTip()
     tooltip.description = getText("ContextMenu_RicksMLCShowTreasureHuntsWindow_tooltip")
     option.toolTip = tooltip
@@ -564,6 +568,11 @@ function ISRicksMLC_TreasureHuntsUI.DoContextMenu(player, context, worldobjects,
     else
         option.notAvailable = false
     end
+
+    local optionLostMap = subMenu:addOption("Reset Lost Maps", worldobjects, ResetLostMaps, player)
+    local tooltipLostMap = ISWorldObjectContextMenu:addToolTip()
+    tooltipLostMap.description = "Reset the lost maps so hitting a zombie regenerates the maps" --getText("ContextMenu_RicksMLCShowTreasureHuntsWindow_tooltip")
+    optionLostMap.toolTip = tooltipLostMap
 
     if isClient() then
         local option = subMenu:addOption(getText("ContextMenu_RicksMLCShowServerTreasureHuntsWindow"), worldobjects, ISRicksMLC_TreasureHuntsServerUI.openWindow , player)

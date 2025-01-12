@@ -19,8 +19,8 @@
 -- The MapDefnFn looks up the currently read map and loads the bounds for the map from the lookup.
 --
 -- Spawning the stash map:  The map is spawned with the followng sequence:
---     local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
---     local treasureItem = InventoryItemFactory.CreateItem("Base." .. treasureModData.Treasure)
+--     local mapItem = instanceItem("Base.RicksMLC_TreasureMapTemplate")
+--     local treasureItem = instanceItem("Base." .. treasureModData.Treasure)
 --     mapItem:setMapID(self:GenerateMapName(self.ModData.CurrentMapNum)) -- Change the ID of the map to the unique ID which matches the LootMap.Init[stashMapName]
 --     StashSystem.doStashItem(stash, mapItem)
 --     mapItem:setName(mapItem:getDisplayName() .. ": " .. treasureItem:getDisplayName())
@@ -523,7 +523,7 @@ function RicksMLC_TreasureHunt:GenerateNextMapItem(doStash)
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateNextMapItem() Error: no stash for '" .. self:GenerateMapName(self.ModData.CurrentMapNum) .. "'" )
         return
     end
-    local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
+    local mapItem = instanceItem("Base.RicksMLC_TreasureMapTemplate")
     mapItem:setMapID(self:GenerateMapName(self.ModData.CurrentMapNum))
     if doStash then
         StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.

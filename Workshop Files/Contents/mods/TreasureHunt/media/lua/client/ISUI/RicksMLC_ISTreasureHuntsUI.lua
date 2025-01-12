@@ -195,9 +195,9 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
                     if type(v) == "table" then
                         -- This is the "new" style of treasure definition, which is a list including the item.
                         -- Barricades n, Decorator "name", Item "name", ProceduralDefns {table of loot spawn}, Town {table}, Zombies n
-                        treasureItem = InventoryItemFactory.CreateItem(v.Item)
+                        treasureItem = instanceItem(v.Item)
                     else
-                        treasureItem = InventoryItemFactory.CreateItem(self.treasureHuntInfo.treasureModData.Treasure)
+                        treasureItem = instanceItem(self.treasureHuntInfo.treasureModData.Treasure)
                     end
                     if treasureItem then
                         _, y, ih = self:DrawInvItemWithIcon(treasureItem, x, y, k .. ": ", nil)

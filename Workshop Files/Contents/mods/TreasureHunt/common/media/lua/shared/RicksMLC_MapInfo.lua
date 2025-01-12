@@ -41,3 +41,8 @@ RicksMLC_MapInfo.Riverside = {6000, 5035, 6899, 5669, defaultMap}
 RicksMLC_MapInfo.Westpoint = {10820, 6500, 12389, 7469, defaultMap}
 RicksMLC_MapInfo.MarchRidge = {9700, 12470, 10579, 13199, defaultMap}
 
+RicksMLC_MapInfo.Ekron = {263, 9271, 1201, 10065, defaultMap}
+RicksMLC_MapInfo.Irvington = {1725, 13089, 3159, 14957, defaultMap}
+RicksMLC_MapInfo.EchoCreek = {3381, 10687, 4429, 11765, defaultMap}
+RicksMLC_MapInfo.Brandenburg = {1146, 5403, 2852, 6428, defaultMap}
+RicksMLC_MapInfo.FallusLake = {7061, 8111, 7510, 8562, defaultMap}

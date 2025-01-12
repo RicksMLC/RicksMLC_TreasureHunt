@@ -523,7 +523,7 @@ function RicksMLC_TreasureHunt:GenerateNextMapItem(doStash)
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.GenerateNextMapItem() Error: no stash for '" .. self:GenerateMapName(self.ModData.CurrentMapNum) .. "'" )
         return
     end
-    local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
+    local mapItem = instanceItem("Base.RicksMLC_TreasureMapTemplate")
     mapItem:setMapID(self:GenerateMapName(self.ModData.CurrentMapNum))
     if doStash then
         StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.

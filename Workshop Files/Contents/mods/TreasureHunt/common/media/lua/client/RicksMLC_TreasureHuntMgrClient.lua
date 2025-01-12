@@ -199,7 +199,7 @@ end
 
 function RicksMLC_TreasureHuntMgrClient:RecreateMapItem(mapItemDetails)
     -- {mapItem = mapItem, stashMapName = mapItem:getMapID(), huntId = self.HuntId, i = self.ModData.CurrentMapNum}
-    local mapItem = InventoryItemFactory.CreateItem("Base.RicksMLC_TreasureMapTemplate")
+    local mapItem = instanceItem("Base.RicksMLC_TreasureMapTemplate")
     mapItem:setMapID(mapItemDetails.stashMapName)
     -- The sever makes the mapItemDetails in RicksMLC_TreasureHunt:AddNextMapToZombie(zombie, doStash)
     -- The server RicksMLC_TreasureHuntServer:GenerateNextMapItem(doStash) has a comment stating it calls the base with doStash = false as it expects the doStashItem to be done on the client.
