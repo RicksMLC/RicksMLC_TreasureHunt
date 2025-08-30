@@ -1,0 +1,11 @@
+-- Rick's MLC Treasure Hunt
+-- Encoding: UTF-8
+
+UI_EN {
+
+    UI_RicksMLC_TreasureHuntOptions_EnableMgrMenuOption = "Enable/Disable Treasure Hunt Mgr Menu (spoilers)",
+    UI_RicksMLC_TreasureHuntOptions_EnableMgrMenuOption_Tooltip = "Turn on/off the Treasure Hunt Manager Menu.  The resulting window can have spoilers, so use this to turn it off.",
+	
+    UI_RicksMLC_TreasureHuntOptions_MapSizeOption = "Map Size",
+    UI_RicksMLC_TreasureHuntOptions_MapSizeOption_Tooltip = "The size of the generate map. Choose small to reduce the exposed map size."
+},

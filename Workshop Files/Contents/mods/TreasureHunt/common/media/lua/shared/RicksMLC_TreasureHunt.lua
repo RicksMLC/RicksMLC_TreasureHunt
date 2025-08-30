@@ -119,8 +119,8 @@ function RicksMLC_TreasureHunt:setBoundsInSquares(mapAPI, mapNum)
     if mapNum then
         treasureModData = self.ModData.Maps[mapNum]
     end
-    local dx = 600
-    local dy = 400
+    dx = treasureModData.dx or 300 -- default to medium map size
+    dy = treasureModData.dy or 200
     if treasureModData then
         mapAPI:setBoundsInSquares(treasureModData.buildingCentreX - dx, treasureModData.buildingCentreY - dy, treasureModData.buildingCentreX + dx, treasureModData.buildingCentreY + dy)
     end
@@ -132,7 +132,7 @@ RicksMLC_TreasureHunt.MapDefnFn = function(mapUI)
 	local mapAPI = mapUI.javaObject:getAPIv1()
     local mapPath = RicksMLC_TreasureHuntMgr.Instance():GetMapPath() or 'media/maps/Muldraugh, KY'
 	MapUtils.initDirectoryMapData(mapUI, mapPath)
-	MapUtils.initDefaultStyleV1(mapUI)
+	MapUtils.initDefaultStyleV3(mapUI)
 	RicksMLC_MapUtils.ReplaceWaterStyle(mapUI)
 	RicksMLC_TreasureHuntMgr.Instance():setBoundsInSquares(mapAPI)
     local currentMapInfo = RicksMLC_TreasureHuntMgr.Instance():FindCurrentlyReadTreasureHunt()
@@ -221,6 +221,7 @@ function RicksMLC_TreasureHunt:CreateTreasureModData(treasure, mapBounds)
     treasureModData.buildingCentreY = buildingCentre.y
     treasureModData.MapPath = mapBounds.MapPath
     treasureModData.Treasure = treasure
+    treasureModData.dx, treasureModData.dy = RicksMLC_TreasureHuntOptions:GetMapDxDy()
     local zombieSetting = self.Zombies
     if isTable(treasure) and treasure.Zombies then
         zombieSetting = treasure.Zombies
@@ -483,7 +484,7 @@ function RicksMLC_TreasureHunt:GenerateNextTreasureMap()
     -- The StashSystem.reinit() is necessary when adding a stash after the game is started.
     -- If the StashSystem is not reinitialised the StashSystem.getStash() not find the stash, even if the
     -- stash name is in the StashSystem.getPossibleStashes():get(i):getName()
-    StashSystem.reinit()
+    self:UpdateStashSystem()
 end
 
 -- InitTreasureHunt() 
@@ -491,7 +492,7 @@ end
 -- Generate the past treasure data so any old maps can still be read.
 -- Initialise the stash maps that correspond with the treasure data.
 function RicksMLC_TreasureHunt:InitTreasureHunt()
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.InitTreasureHunt()")
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.InitTreasureHunt()")
     self:LoadModData()
     self:GeneratePastTreasures()
     if not self.ModData.Maps then
@@ -500,8 +501,14 @@ function RicksMLC_TreasureHunt:InitTreasureHunt()
     end
     self:SaveModData()
     self.Initialised = true
-    --RicksMLC_THSharedUtils.DumpArgs(self, 0, "InitTreasureHunt post SaveModData()")
+    RicksMLC_THSharedUtils.DumpArgs(self, 0, "InitTreasureHunt post SaveModData()... StashSystem.reinit()")
     self:AddStashMaps()
+
+    self:UpdateStashSystem()
+end
+
+-- Update the java StashSystem so it will have the the new treasure map applied.
+function RicksMLC_TreasureHunt:UpdateStashSystem()
     -- The reinit is necessary when adding a stash after the game is started.
     -- If the StashSystem is not reinitialised the StashSystem.getStash() not find the stash, even if the
     -- stash name is in the StashSystem.getPossibleStashes():get(i):getName()
