@@ -406,6 +406,33 @@ end
 -- Commented out code - uncomment to make temp test
 --Events.OnKeyPressed.Add(RicksMLC_TreasureHuntMgr.OnKeyPressed)
 
+local function dumpStashSystem()
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.dumpSystemStash() ")
+
+    local allStashTable = {} -- A table of Stash class
+    local tmpStashTable = StashSystem.getAllStashes()
+    for i=1,tmpStashTable:size() do
+        allStashTable[tmpStashTable:get(i-1):getName()] = tmpStashTable:get(i-1)
+    end
+
+    -- Load the StashSystem map names for checking with the treasure hunt names:
+    stashAlreadyReadNameList = {}
+    local tmpList = StashSystem.getAlreadyReadMap()
+    for i=1,tmpList:size() do
+        stashAlreadyReadNameList[tmpList:get(i-1)] = tmpList:get(i-1)
+    end
+
+    if allStashTable then
+        RicksMLC_THSharedUtils.DumpArgs(allStashTable, 0, "dumpSystemStash(): allStashTable")
+    end
+
+    if stashAlreadyReadNameList then
+        RicksMLC_THSharedUtils.DumpArgs(tmpTable, 0, "dumpSystemStash(): already read list")
+    end
+end
+
+Events.RicksMLC_TreasureHuntMgr_InitDone.Add(dumpStashSystem)
+
 if not isClient() and not isServer() then
     -- Ie: single player
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr: stand alone. Add OnGameStart")

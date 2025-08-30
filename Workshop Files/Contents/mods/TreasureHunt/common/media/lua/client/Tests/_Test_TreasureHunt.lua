@@ -83,7 +83,7 @@ end
 function TreasureHunt_Test:newInventoryItem(type)
 	local item = nil
     if type ~= nil then 
-        item = InventoryItemFactory.CreateItem(type)
+        item = instanceItem(type)
     end
 	return item
 end

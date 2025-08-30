@@ -203,6 +203,10 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
                         _, y, ih = self:DrawInvItemWithIcon(treasureItem, x, y, k .. ": ", nil)
                         y = y + ih + 2
                     end        
+                elseif k == "stashMapName" then
+                    local msg = v .. " StashSystem: " .. (self.owner:getMatchingStashMap(v) or "none")
+                    self:drawText(k .. ": " .. tostring(msg), x, y, 1, 1, 1, 1, UIFont.NewSmall)
+                    y = y + lineHeight
                 else
                     if type(v) == "table" then
                         local lvl2txt = k
@@ -368,6 +372,10 @@ function ISRicksMLC_TreasureHuntsUI:prerender()
     self:ShowSystemMsg()
 end
 
+function ISRicksMLC_TreasureHuntsUI:getMatchingStashMap(name)
+    return self.stashNameList[name]
+end
+
 function ISRicksMLC_TreasureHuntsUI:new(x, y, width, height)
     local o = ISCollapsableWindow:new(x, y, width, height)
     setmetatable(o, self)
@@ -387,6 +395,15 @@ function ISRicksMLC_TreasureHuntsUI:new(x, y, width, height)
     o.moveWithMouse = true
     o.systemMsg = ""
     o.systemErrMsg = ""
+
+    -- Load the StashSystem map names for checking with the treasure hunt names:
+    o.stashNameList = {}
+    local tmpList = StashSystem.getAlreadyReadMap()
+    for i=1,tmpList:size() do
+        o.stashNameList[tmpList:get(i-1)] = tmpList:get(i-1)
+        DebugLog.log(DebugType.Mod, "ISRicksMLC_TreasureHuntsUI:new() StashSystem: '" .. tmpList:get(i-1) .. "'")
+    end
+
     return o;
 end
 
@@ -554,6 +571,8 @@ Events.RicksMLC_TreasureHuntMgr_InitDone.Add(ISRicksMLC_TreasureHuntsUI.HandleTr
 Events.RicksMLC_TreasureHuntMgr_AddTreasureHunt.Add(ISRicksMLC_TreasureHuntsUI.HandleTreasureHuntUpdate)
 
 function ISRicksMLC_TreasureHuntsUI.DoContextMenu(player, context, worldobjects, test)
+    if not RicksMLC_TreasureHuntOptions:IsMgrMenuOn() then return end
+
     -- Add the menu option to open the treasure hunts window.  Disable if the window already exists.
     local playerObj = getSpecificPlayer(player)
 
