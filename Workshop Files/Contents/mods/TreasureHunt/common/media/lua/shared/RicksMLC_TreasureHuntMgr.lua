@@ -136,11 +136,29 @@ function RicksMLC_TreasureHuntMgr:GetMapPath()
     return mapPath or RicksMLC_MapUtils.GetDefaultMapPath()
 end
 
+function RicksMLC_TreasureHuntMgr:GetCurrentTreasureHuntMapInfo()
+    local currentMapInfo = nil
+    if RicksMLC_ISWorldMapOverride.currentStashMapNameForISWorldMap then
+        currentMapInfo = self:FindCurrentMapForVanillaMapCall(RicksMLC_ISWorldMapOverride.currentStashMapNameForISWorldMap)
+    else 
+        currentMapInfo = self:FindCurrentlyReadTreasureHunt()
+    end
+    return currentMapInfo
+end
+
 function RicksMLC_TreasureHuntMgr:setBoundsInSquares(mapAPI)
-    local currentMapInfo = self:FindCurrentlyReadTreasureHunt()
+    local currentMapInfo = self:GetCurrentTreasureHuntMapInfo()
     if currentMapInfo then
         currentMapInfo.TreasureHunt:setBoundsInSquares(mapAPI, currentMapInfo.MapNum)
     end
+end
+
+function RicksMLC_TreasureHuntMgr:FindCurrentMapForVanillaMapCall(currentStashMapName)
+    local mapLookup = RicksMLC_MapIDLookup.Instance():GetMapLookup(currentStashMapName)
+    if mapLookup then
+        return {TreasureHunt = self.TreasureHunts[mapLookup.HuntId], MapNum = mapLookup.MapNum}
+    end
+    return nil
 end
 
 function RicksMLC_TreasureHuntMgr:FindCurrentlyReadTreasureHunt()
@@ -374,7 +392,7 @@ end
 local startCount = 0
 function RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart()
     startCount = startCount + 1
-    if startCount < 5 then return end
+    if startCount < 1 then return end
     RicksMLC_TreasureHuntMgr.Instance():InitTreasureHunts()
     RicksMLC_TreasureHuntMgr.Initialsed = true
     Events.EveryOneMinute.Remove(RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart)

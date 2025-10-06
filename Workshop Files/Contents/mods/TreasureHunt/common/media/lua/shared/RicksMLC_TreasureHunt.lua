@@ -47,6 +47,7 @@ require "RicksMLC_SharedUtils"
 require "StashDescriptions/RicksMLC_StashDescLookup"
 require "StashDescriptions/RicksMLC_TreasureHuntStash"
 require "ISBaseObject"
+require "ISMapDefinitions"
 
 LuaEventManager.AddEvent("RicksMLC_TreasureHunt_Finished")
 
@@ -63,7 +64,10 @@ function RicksMLC_TreasureHunt:new(treasureHuntDefn, huntId)
     o.Barricades = treasureHuntDefn.Barricades -- Single number or {min, max}
     o.Zombies = treasureHuntDefn.Zombies -- Single number or {min, max}
     o.Treasures = treasureHuntDefn.Treasures
-
+    o.BuildingOffsetX = treasureHuntDefn.BuildingOffsetX or 0
+    o.BuildingOffsetY = treasureHuntDefn.BuildingOffsetY or 0
+    o.MapWidth = treasureHuntDefn.MapWidth 
+    o.MapHeight = treasureHuntDefn.MapHeight
     o.TreasureHuntDefn = treasureHuntDefn
 
     -- Treasure lookup
@@ -122,7 +126,15 @@ function RicksMLC_TreasureHunt:setBoundsInSquares(mapAPI, mapNum)
     dx = treasureModData.dx or 300 -- default to medium map size
     dy = treasureModData.dy or 200
     if treasureModData then
-        mapAPI:setBoundsInSquares(treasureModData.buildingCentreX - dx, treasureModData.buildingCentreY - dy, treasureModData.buildingCentreX + dx, treasureModData.buildingCentreY + dy)
+        -- TODO: Add offsets the treasureModData so the setBoundsInSquares does not centre the map on the building.
+        -- The map bounds are -dx to +dx and -dy to +dy.
+        local buildingOffsetX = treasureModData.buildingOffsetX or 0
+        local buildingOffsetY = treasureModData.buildingOffsetY or 0
+        mapAPI:setBoundsInSquares(
+            treasureModData.buildingCentreX - buildingOffsetX - dx, 
+            treasureModData.buildingCentreY - buildingOffsetY - dy,
+            treasureModData.buildingCentreX - buildingOffsetX + dx, 
+            treasureModData.buildingCentreY - buildingOffsetY + dy)
     end
 end
 
@@ -130,16 +142,18 @@ end
 -- This is part of what ties the map to the stash.
 RicksMLC_TreasureHunt.MapDefnFn = function(mapUI)
 	local mapAPI = mapUI.javaObject:getAPIv1()
-    local mapPath = RicksMLC_TreasureHuntMgr.Instance():GetMapPath() or 'media/maps/Muldraugh, KY'
+    local mapPath = RicksMLC_TreasureHuntMgr.Instance():GetMapPath() or LootMaps.DEFAULT_MAP_DIRECTORY
 	MapUtils.initDirectoryMapData(mapUI, mapPath)
 	MapUtils.initDefaultStyleV3(mapUI)
 	RicksMLC_MapUtils.ReplaceWaterStyle(mapUI)
-	RicksMLC_TreasureHuntMgr.Instance():setBoundsInSquares(mapAPI)
-    local currentMapInfo = RicksMLC_TreasureHuntMgr.Instance():FindCurrentlyReadTreasureHunt()
+    -- This goes through the manager because the vanilla code calls this without context. 
+    -- The manager finds the corresponding treasure hunt and call its setBoundsInSquares()
+	RicksMLC_TreasureHuntMgr.Instance():setBoundsInSquares(mapAPI) 
+    local currentMapInfo = RicksMLC_TreasureHuntMgr.Instance():GetCurrentTreasureHuntMapInfo()
     if currentMapInfo then
         currentMapInfo.TreasureHunt:CallAnyVisualDecorator(currentMapInfo.MapNum, mapUI)
     end
-	MapUtils.overlayPaper(mapUI)
+    MapUtils.overlayPaper(mapUI)
 end
 
 function RicksMLC_TreasureHunt:CallAnyVisualDecorator(mapNum, mapUI)
@@ -221,7 +235,18 @@ function RicksMLC_TreasureHunt:CreateTreasureModData(treasure, mapBounds)
     treasureModData.buildingCentreY = buildingCentre.y
     treasureModData.MapPath = mapBounds.MapPath
     treasureModData.Treasure = treasure
-    treasureModData.dx, treasureModData.dy = RicksMLC_TreasureHuntOptions:GetMapDxDy()
+    if treasureModData.MapWidth and treasureModData.MapHeight then
+        treasureModData.dx = PZMath.roundToInt(treasureModData.MapWidth / 2)
+        treasureModData.dy = PZMath.roundToInt(treasureModData.MapHeight / 2)
+    end
+    if isTable(treasure) and treasure.MapWidth and treasure.MapHeight then
+        treasureModData.dx = PZMath.roundToInt(treasure.MapWidth / 2)
+        treasureModData.dy = PZMath.roundToInt(treasure.MapHeight / 2)
+    end
+    if (not treasureModData.dx or not treasureModData.dy) then
+        -- Get the map size from the mod options.
+        treasureModData.dx, treasureModData.dy = RicksMLC_TreasureHuntOptions:GetMapDxDy()
+    end
     local zombieSetting = self.Zombies
     if isTable(treasure) and treasure.Zombies then
         zombieSetting = treasure.Zombies
@@ -245,6 +270,13 @@ function RicksMLC_TreasureHunt:CreateTreasureModData(treasure, mapBounds)
             treasureModData.barricades = barricadeSetting
         end
     end
+    treasureModData.buildingOffsetX = self.BuildingOffsetX or 0
+    treasureModData.buildingOffsetY = self.BuildingOffsetY or 0
+    if isTable(treasure) and treasure.BuildingOffsetX then  
+        treasureModData.buildingOffsetX = treasure.BuildingOffsetX or 0
+        treasureModData.buildingOffsetY = treasure.BuildingOffsetY or 0
+    end
+
     treasureModData.Found = false
     return treasureModData
 end
@@ -316,6 +348,9 @@ function RicksMLC_TreasureHunt:AddStashMap(treasureModData, i)
     if not stashDesc then
         --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashMap() Adding stash for " .. stashMapName)
         self:AddStashToStashUtil(treasureModData, i, stashMapName)
+        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashMap() Adding to StashSystem for " .. stashMapName)
+        -- Add the stash map to the existing stash info in the StashSystem.
+        RicksMLC_TreasureHuntStash.AddStashToStashSystem(stashMapName)
     else
         --DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
         --RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
@@ -481,10 +516,6 @@ function RicksMLC_TreasureHunt:GenerateNextTreasureMap()
         return
     end
     self:SetNextTreasureToHunt(self.Treasures[i], self.Town)
-    -- The StashSystem.reinit() is necessary when adding a stash after the game is started.
-    -- If the StashSystem is not reinitialised the StashSystem.getStash() not find the stash, even if the
-    -- stash name is in the StashSystem.getPossibleStashes():get(i):getName()
-    self:UpdateStashSystem()
 end
 
 -- InitTreasureHunt() 
@@ -503,17 +534,8 @@ function RicksMLC_TreasureHunt:InitTreasureHunt()
     self.Initialised = true
     RicksMLC_THSharedUtils.DumpArgs(self, 0, "InitTreasureHunt post SaveModData()... StashSystem.reinit()")
     self:AddStashMaps()
-
-    self:UpdateStashSystem()
 end
 
--- Update the java StashSystem so it will have the the new treasure map applied.
-function RicksMLC_TreasureHunt:UpdateStashSystem()
-    -- The reinit is necessary when adding a stash after the game is started.
-    -- If the StashSystem is not reinitialised the StashSystem.getStash() not find the stash, even if the
-    -- stash name is in the StashSystem.getPossibleStashes():get(i):getName()
-    StashSystem.reinit()
-end
 
 -----------------------------------------------------------------------
 -- Functions for detecting the player found the treasure item.
