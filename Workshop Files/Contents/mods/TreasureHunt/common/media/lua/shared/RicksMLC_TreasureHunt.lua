@@ -200,13 +200,19 @@ function RicksMLC_TreasureHunt:getNearestBuildingDef(x, y)
     return RicksMLC_MapUtils.getNearestBuildingDef(x, y)
 end
 
+function RicksMLC_TreasureHunt:IsBuildingOk(nearestBuildingDef)
+    -- Check for bad building types
+    -- Buildings like outhouses of 1-square are not suitable as the vanilla stash spawning doesn't work in them.
+    return nearestBuildingDef:getArea() > 1
+end
+
 -- Choose a random buiding for the treasure.
 function RicksMLC_TreasureHunt:ChooseRandomBuilding(mapBounds)
     local x = ZombRand(mapBounds.x1, mapBounds.x2)
     local y = ZombRand(mapBounds.y1, mapBounds.y2)
     local nearestBuildingDef = self:getNearestBuildingDef(x, y)
     local retries = 20
-    while ((not nearestBuildingDef or nearestBuildingDef:isHasBeenVisited() or self:IsDuplicateBuilding(nearestBuildingDef)) and retries > 0) do
+    while ((not nearestBuildingDef or nearestBuildingDef:isHasBeenVisited() or self:IsDuplicateBuilding(nearestBuildingDef) or not self:IsBuildingOk(nearestBuildingDef)) and retries > 0) do
         x = ZombRand(mapBounds.x1, mapBounds.x2)
         y = ZombRand(mapBounds.y1, mapBounds.y2)
         nearestBuildingDef = self:getNearestBuildingDef(x,  y)
