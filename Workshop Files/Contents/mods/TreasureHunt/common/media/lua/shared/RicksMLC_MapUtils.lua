@@ -118,6 +118,6 @@ end
 -- See function RicksMLC_TreasureHuntMgrServer.OnServerStarted() which instantiates one on the server
 function RicksMLC_MapUtils.getNearestBuildingDef(x, y, ...)
     local metaGrid = getWorld():getMetaGrid() -- Ensure the metaGrid is intitialised before calling AmbientStreamManager.getNearestBuilding()
-    local nearestBuildingDef = AmbientStreamManager.getNearestBuilding(x, y, Vector2f.new())
+    local nearestBuildingDef = AmbientStreamManager.getNearestBuilding(x, y)
     return nearestBuildingDef
 end
