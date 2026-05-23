@@ -58,8 +58,8 @@
 -- Change #3: Add more than one item to the treasure loot.  The "treasure" is still a single item, but other items can be found.
 --      Perhaps use the junk = {rolls = 1, items = {}} to fill in other items in RicksMLC_TreasureHuntDistributions.lua
 
-if not getActivatedMods():contains("\\RicksMLC_TreasureHunt") then
-    DebugLog.log(DebugType.Mod, "Rick's MLC TreasureHunt Samples abort.  Dependency 'RicksMLC_TreasureHunt' not in activated mods")
+if not getActivatedMods():contains("RicksMLC_TreasureHunt") then
+    DebugLog.log(DebugType.Mod, "Rick's MLC TreasureHunt Samples ERROR: Abort.  Dependency 'RicksMLC_TreasureHunt' not in activated mods")
     return
 end
 
@@ -94,12 +94,15 @@ end
 local purple = {r = 0.8, g = 0.2, b = 0.5}
 
 function RicksMLC_SampleTreasureHunts.FluffyFootDecorator(stashMap, x, y)
+    DebugLog.log(DebugType.Mod, "RicksMLC_SampleTreasureHunts.FluffyFootDecorator() for map " .. stashMap.customName)
     stashMap:addStamp("Heart", nil, x, y, purple.r, purple.g, purple.b)
-    stashMap:addStamp(nil, "I just love FluffyFoot! - maybe there is one here?", x + 20, y, purple.r, purple.g, purple.b)
+    stashMap:addStamp(nil, "I just love FluffyFoot!", x + 20, y, purple.r, purple.g, purple.b)
+    stashMap:addStamp(nil, "... maybe there is one here?", x+10, y+30, purple.r, purple.g, purple.b)
 end
 
 local orange = {r = 0.9, g = 0.5, b = 0.1}
 function RicksMLC_SampleTreasureHunts.FreddyFoxDecorator(stashMap, x, y)
+    DebugLog.log(DebugType.Mod, "RicksMLC_SampleTreasureHunts.FreddyFoxDecorator() for map " .. stashMap.customName)
     stashMap:addStamp("Pawprint", nil, x, y, orange.r, orange.g, orange.b)
     stashMap:addStamp(nil, "Freddy? Is that you?", x + 20, y, orange.r, orange.g, orange.b)
 end
@@ -173,7 +176,7 @@ end
 -- The ProceduralDefns is a hybrid format which makes the Procs for each of the defined Containers.
 RicksMLC_SampleTreasureHunts.TreasureHuntDefinitions = {
     {Name = "Spiffo And Friends", Town = nil, Barricades = {1, 100}, Zombies = {3, 15}, Treasures = {
-        {Item = "BorisBadger", VisualDecorator = "SampleVisualDecorator", BuildingOffsetX = -150, BuildingOffsetY = -100}, -- Offset the map so the building is not in the centre.
+        {Item = "BorisBadger", VisualDecorator = "SampleVisualDecorator", BuildingOffsetX = -110, BuildingOffsetY = -80}, -- Offset the map so the building is not in the centre.
         "FluffyfootBunny",
         {Item = "FreddyFox", MapWidth = 200, MapHeight = 150, BuildingOffsetX = -75, BuildingOffsetY = -40, Decorator = "FreddyFoxDecorator"},
         "FurbertSquirrel",
@@ -236,6 +239,7 @@ end
 
 -- Treasure Hunt PreInit event subscriber. Typically use this event to register map decorators and add custom Towns.
 local function PreInitTreasureHunt()
+    DebugLog.log(DebugType.Mod, "RicksMLC_SampleTreasureHunts PreInitTreasureHunt()")
     AddCustomTextures()
     RegisterMapDecorators()
     AddSampleTownToTreasureHunt()

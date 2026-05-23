@@ -33,7 +33,8 @@ function RicksMLC_TreasureHuntClient:AddStashFromServer()
         -- The reinit is necessary when adding a stash after the game is started.
         -- If the StashSystem is not reinitialised the StashSystem.getStash() not find the stash, even if the
         -- stash name is in the StashSystem.getPossibleStashes():get(i):getName()
-        self:AddStashToStashSystem(stashMapName)
+        -- The Client needs to have the stash map so it can show the annotations.
+        RicksMLC_TreasureHuntStash.AddStashToStashSystem(stashMapName)
     else
         DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
         --RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")

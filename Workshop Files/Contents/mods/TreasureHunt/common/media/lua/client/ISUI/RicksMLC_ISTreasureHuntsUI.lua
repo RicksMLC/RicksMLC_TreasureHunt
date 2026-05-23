@@ -185,6 +185,9 @@ function ISRicksMLC_TreasureHuntPanel:prerender()
         self:drawText("Restrict to user: " .. (self.treasureHuntInfo.RestrictMapForUserName or "none"), x, y, 1, 1, 1, 1, UIFont.NewSmall)
         y = y + lineHeight
 
+        self:drawText("CurrentMapNum: " .. tostring(self.treasureHuntInfo.modData.CurrentMapNum) .. " LastSpawnedMapNum: " .. tostring(self.treasureHuntInfo.modData.LastSpawnedMapNum), x, y, 1, 1, 1, 1, UIFont.NewSmall)
+        y = y + lineHeight
+
         if self.treasureHuntInfo.treasureModData then
             self:drawText("treasureModData:", x, y, 1, 1, 1, 1, UIFont.NewSmall)
             y = y + lineHeight

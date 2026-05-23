@@ -112,13 +112,13 @@ end
 
 function RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie(player, args)
     -- Server has received a message that the client has hit a zombie
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
 
     self:SetWaitingToHitZombie(false, nil, player)
     local mapItemList = self:CreateClientInitiatedMapItems(player, args)
     local replyArgs = {playerUsername = player:getUsername(), mapItemList = mapItemList}
     --RicksMLC_THSharedUtils.DumpArgs(replyArgs, 0, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie() replyArgs")
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie() for " .. replyArgs.playerUsername .. " mapItemList created with " .. #mapItemList .. " items. Sending to client.")
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "MapItemsGenerated", replyArgs)
 end
 
@@ -205,7 +205,6 @@ end
 function RicksMLC_TreasureHuntMgrServer:AddTreasureHunt(treasureHuntDefn, isFromModData)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:AddTreasureHunt() tempRestrictToPlayer: " .. ((self.tempRestrictToPlayer and self.tempRestrictToPlayer:getUsername()) or "nil"))
 
-
     local treasureHunt = RicksMLC_TreasureHuntMgr.AddTreasureHunt(self, treasureHuntDefn, isFromModData)
     return treasureHunt
 end
@@ -288,6 +287,9 @@ function RicksMLC_TreasureHuntMgrServer.OnClientCommand(moduleName, command, pla
     end
     if command == "SimulateOnHitZombie" then
         RicksMLC_TreasureHuntMgr.Instance():HandleSimulateOnHitZombie(player, args)
+    end
+    if command == "ResetLostMaps" then
+        RicksMLC_TreasureHuntMgr.Instance():ResetLostMaps()
     end
 end
 

@@ -57,7 +57,7 @@
 -- Change #3: Add more than one item to the treasure loot.  The "treasure" is still a single item, but other items can be found.
 --      Perhaps use the junk = {rolls = 1, items = {}} to fill in other items in RicksMLC_TreasureHuntDistributions.lua
 
-if not getActivatedMods():contains("\\RicksMLC_TreasureHunt") then
+if not getActivatedMods():contains("RicksMLC_TreasureHunt") then
     DebugLog.log(DebugType.Mod, "Rick's MLC TreasureHunt Samples abort.  Dependency 'RicksMLC_TreasureHunt' not in activated mods")
     return
 end

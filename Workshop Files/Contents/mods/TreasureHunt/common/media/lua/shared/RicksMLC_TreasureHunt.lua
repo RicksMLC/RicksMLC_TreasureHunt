@@ -43,11 +43,11 @@ end
 
 require "RicksMLC_TreasureHuntDistributions"
 require "RicksMLC_MapUtils"
-require "RicksMLC_SharedUtils"
+require "RicksMLC_THSharedUtils"
 require "StashDescriptions/RicksMLC_StashDescLookup"
 require "StashDescriptions/RicksMLC_TreasureHuntStash"
 require "ISBaseObject"
-require "ISMapDefinitions"
+-- FIXME: Remove?  Why is this here? require "ISMapDefinitions"
 
 LuaEventManager.AddEvent("RicksMLC_TreasureHunt_Finished")
 
@@ -251,7 +251,12 @@ function RicksMLC_TreasureHunt:CreateTreasureModData(treasure, mapBounds)
     end
     if (not treasureModData.dx or not treasureModData.dy) then
         -- Get the map size from the mod options.
-        treasureModData.dx, treasureModData.dy = RicksMLC_TreasureHuntOptions:GetMapDxDy()
+        if isServer() then
+            treasureModData.dx = 600
+            treasureModData.dy = 400
+        else
+            treasureModData.dx, treasureModData.dy = RicksMLC_TreasureHuntOptions:GetMapDxDy()
+        end
     end
     local zombieSetting = self.Zombies
     if isTable(treasure) and treasure.Zombies then
@@ -302,6 +307,7 @@ function RicksMLC_TreasureHunt:CallDecorator(stashMap, treasureModData, i)
         -- The Item decorator overrides the general decorator list for the hunt.
         decoratorName = self.Treasures[i].Decorator
     end
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:CallDecorator() for map decoratorName: " .. tostring(decoratorName))
     if decoratorName then
         local decorator = RicksMLC_MapDecorators.Instance():Get(decoratorName)
         decorator(stashMap, treasureModData.buildingCentreX, treasureModData.buildingCentreY)
@@ -325,6 +331,7 @@ local function dumpStash(stashMap)
 end
 
 function RicksMLC_TreasureHunt:AddStashToStashUtil(treasureModData, i, stashMapName)
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashToStashUtil() for stashMapName: " .. stashMapName)
     local spawnTable = stashMapName -- This string is the lookup into the SuburbsDisributions table.  See RicksMLC_TreasureHuntDistributions.lua
     local newStashMap = RicksMLC_TreasureHuntStash.AddStash(
         stashMapName,
@@ -580,6 +587,10 @@ function RicksMLC_TreasureHunt:IsBuildingVisited()
     end
 end
 
+function RicksMLC_TreasureHunt:AddMapToSquare(square, mapItem)
+    
+end
+
 -- AddMapToWorld: Override on the server to do nothing as it is meaninless to add the mapItem on the server side.
 function RicksMLC_TreasureHunt:AddMapToWorld(mapItem, zombie, gridSquare)
     if not zombie then
@@ -613,7 +624,24 @@ function RicksMLC_TreasureHunt:AddMapToWorld(mapItem, zombie, gridSquare)
         end
     else
         --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() not dead")
-        zombie:addItemToSpawnAtDeath(mapItem)
+        if isClient() then 
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() isClient() adding to world at zombie location - clumsy zombie")
+            local sq = zombie:getSquare()
+            if sq then
+                sq:AddWorldInventoryItem(mapItem, ZombRand(0.1, 0.5), ZombRand(0.1, 0.5), 0)
+            else
+                DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() zombie has no square! - add to player location")
+                local playerSq = getPlayer():getSquare()
+                if playerSq then
+                    playerSq:AddWorldInventoryItem(mapItem, ZombRand(0.1, 0.5), ZombRand(0.1, 0.5), 0)
+                else
+                    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() player has no square! - map lost :(")
+                end
+            end
+        else
+            zombie:addItemToSpawnAtDeath(mapItem)
+            zombie:sync()
+        end
     end
 end
 

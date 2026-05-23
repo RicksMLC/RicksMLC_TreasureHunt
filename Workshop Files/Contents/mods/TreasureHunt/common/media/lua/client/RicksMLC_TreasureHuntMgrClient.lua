@@ -198,6 +198,7 @@ function RicksMLC_TreasureHuntMgrClient:HandleOnHitZombie(zombie, character, bod
 end
 
 function RicksMLC_TreasureHuntMgrClient:RecreateMapItem(mapItemDetails)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:RecreateMapItem() for mapItemDetails: " .. tostring(mapItemDetails.stashMapName))
     -- {mapItem = mapItem, stashMapName = mapItem:getMapID(), huntId = self.HuntId, i = self.ModData.CurrentMapNum}
     local mapItem = instanceItem("Base.RicksMLC_TreasureMapTemplate")
     mapItem:setMapID(mapItemDetails.stashMapName)
@@ -244,8 +245,10 @@ function RicksMLC_TreasureHuntMgrClient:HandleOnMapItemsGenerated(args)
                 if treasureHunt.Name == mapItemDetails.name then
                     treasureHunt:UpdateTreasureHuntMap(mapItemDetails)
                     if self:IsMapItemForPlayer(treasureHunt, mapItemDetails, args) then
-                        local mapItem = self:RecreateMapItem(mapItemDetails)
-                        treasureHunt:AddMapToWorld(mapItem, self.HitZombie, getPlayer():getSquare())
+                        -- FIXME: Remove as the mapItem already exists?
+                        --local mapItem = self:RecreateMapItem(mapItemDetails)
+                        mapItemDetails.mapItem = self:RecreateMapItem(mapItemDetails)
+                        treasureHunt:AddMapToWorld(mapItemDetails.mapItem, self.HitZombie, getPlayer():getSquare())
                     end
                 end
             end

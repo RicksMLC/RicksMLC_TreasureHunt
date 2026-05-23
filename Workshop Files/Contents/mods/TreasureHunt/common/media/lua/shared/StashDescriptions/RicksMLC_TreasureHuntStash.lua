@@ -3,6 +3,7 @@
 RicksMLC_TreasureHuntStash = {}
 
 function RicksMLC_TreasureHuntStash.DefaultDecorator(stashMap, x, y)
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash.DefaultDecorator() for map " .. stashMap.customName)
     stashMap:addStamp("Circle", nil, x, y, 1, 0, 0)
     stashMap:addStamp("ArrowWest", nil, x + 10, y, 1, 0, 0)
     stashMap:addStamp(nil, "Stash_RicksMLC_TreasureMap_Text1", x + 20, y - 10, 1, 0, 0)
@@ -29,7 +30,13 @@ function RicksMLC_TreasureHuntStash.AddStashToStashSystem(stashMapName)
     local allStashes = StashSystem.getAllStashes()
     if allStashes == nil or allStashes:isEmpty() then
         -- Do we init, or just return to let the vanilla code init all?
-        return
+        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash.AddStashToStashSystem() StashSystem.getAllStashes() is empty. Calling StashSystem.initAllStashes()")
+        StashSystem.initAllStashes()
+        allStashes = StashSystem.getAllStashes()
+        if allStashes == nil or allStashes:isEmpty() then
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash.AddStashToStashSystem() ERROR: initAllStashes() failed: allStashes is " .. (not allStashes and "nil") or ("empty"))
+            return
+        end
     end
 
     -- Add the new stash to the StashSystem.  This code is a similar process to the StashSystem.initAllStashes()

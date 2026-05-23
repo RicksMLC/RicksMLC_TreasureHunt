@@ -9,7 +9,7 @@ function RicksMLC_THSharedUtils.DumpArgs(args, lvl, desc)
     if not lvl then lvl = 0 end
     if lvl == 0 then
         DebugLog.log(DebugType.Mod, "RicksMLC_THSharedUtils.DumpArgs() " .. desc .. " begin")
-        if not args then DebugLog.log(DebugType.Mod, " args is nil.") return end
+        if not args then DebugLog.log(DebugType.Mod, " args is nil. Dump End") return end
     end
     local argIndent = ''
     for i = 1, lvl do

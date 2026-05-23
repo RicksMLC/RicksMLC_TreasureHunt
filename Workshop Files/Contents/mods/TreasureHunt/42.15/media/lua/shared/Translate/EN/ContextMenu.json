@@ -1,0 +1,8 @@
+{
+    "_comment_1":  "Rick\u0027s MLC Treasure Hunt",
+    "_comment_2":  "Encoding: UTF-8",
+    "ContextMenu_RicksMLCShowTreasureHuntsWindow":  "Rick\u0027s MLC Treasure Hunts",
+    "ContextMenu_RicksMLCShowTreasureHuntsWindow_tooltip":  "List of treasure hunts in the treasure hunt mgr",
+    "ContextMenu_RicksMLCShowServerTreasureHuntsWindow":  "Rick\u0027s MLC Treasure Hunts Server",
+    "ContextMenu_RicksMLCShowServerTreasureHuntsWindow_tooltip":  "List of treasure hunts in the server treasure hunt mgr"
+}

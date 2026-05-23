@@ -246,8 +246,9 @@ function RicksMLC_TreasureHuntMgr:LoadTreasureHuntDefinitions(treasureHuntDefini
 end
 
 function RicksMLC_TreasureHuntMgr:InitOnHitZombie()
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitOnHitZombie()")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitOnHitZombie() #self.TreasureHunts: " .. tostring(#self.TreasureHunts))
     for _, treasureHunt in ipairs(self.TreasureHunts) do
+        --RicksMLC_THSharedUtils.DumpArgs(treasureHunt, 0, "RicksMLC_TreasureHuntMgr:InitOnHitZombie() IsNewMapNeeded: DumpArgs")
         if treasureHunt:IsNewMapNeeded() then
             DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr:InitOnHitZombie() call SetOnHitZombieForNewMap()")
             -- TODO: MP: Check this is the correct player
@@ -289,7 +290,7 @@ function RicksMLC_TreasureHuntMgr:LoadSampleTreasureHunts()
 end
 
 function RicksMLC_TreasureHuntMgr:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon)
-    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.HandleOnHitZombie()")
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.HandleOnHitZombie()")
     for i, treasureHunt in ipairs(self.TreasureHunts) do
         treasureHunt:HandleOnHitZombie(zombie, character, bodyPartType, handWeapon, true) -- doStash = true for non-client/server
     end
@@ -366,6 +367,9 @@ end
 
 function RicksMLC_TreasureHuntMgr:ResetLostMaps()
     -- TODO: MP: Check this is the correct player
+    if isClient() then
+        sendClientCommand("RicksMLC_TreasureHuntMgrServer", "ResetLostMaps", {})
+    end
     for _, treasureHunt in ipairs(RicksMLC_TreasureHuntMgr.Instance().TreasureHunts) do
         treasureHunt:ResetLastSpawnedMapNum()
         self:SetOnHitZombieForNewMap(treasureHunt)
@@ -392,7 +396,8 @@ end
 local startCount = 0
 function RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart()
     startCount = startCount + 1
-    if startCount < 1 then return end
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart: startCount: " .. tostring(startCount))
+    if startCount < 3 then return end
     RicksMLC_TreasureHuntMgr.Instance():InitTreasureHunts()
     RicksMLC_TreasureHuntMgr.Initialsed = true
     Events.EveryOneMinute.Remove(RicksMLC_TreasureHuntMgr.EveryOneMinuteAtStart)
