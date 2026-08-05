@@ -1,6 +1,17 @@
 
 RicksMLC_THSharedUtils = {}
 
+function RicksMLC_THSharedUtils.findZombieByUID(id)
+    local zombies = getCell():getZombieList()
+    for i=0, zombies:size()-1 do
+        local z = zombies:get(i)
+        if z:getOnlineID() == id then
+            return z
+        end
+    end
+    return nil
+end
+
 function RicksMLC_THSharedUtils.is_array(t)
     return t ~= nil and type(t) == 'table' and t[1] ~= nil
 end

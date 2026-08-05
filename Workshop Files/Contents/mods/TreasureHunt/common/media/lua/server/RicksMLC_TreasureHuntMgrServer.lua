@@ -91,15 +91,16 @@ end
 function RicksMLC_TreasureHuntMgrServer:SendAddedTreasureHuntToClients(newTreasureHunt)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:SendAddedTreasureHuntToClients() '" .. newTreasureHunt.Name .. "'")
     local args = {NewTreasureHunt = newTreasureHunt}
-    --RicksMLC_THSharedUtils.DumpArgs(args, 0, "RicksMLC_TreasureHuntMgrServer: sendServerCommand: AddTreasureHuntFromServer args")
+    RicksMLC_THSharedUtils.DumpArgs(args, 0, "RicksMLC_TreasureHuntMgrServer: sendServerCommand: AddTreasureHuntFromServer args")
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "AddTreasureHuntFromServer", args)
 end
 
 function RicksMLC_TreasureHuntMgrServer:CreateClientInitiatedMapItems(player, args)
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:CreateClientInitiatedMapItems()")
+    local zombie = RicksMLC_THSharedUtils.findZombieByUID(args.zombieOnlineID)
     local mapItemList = {}
     for i, treasureHunt in ipairs(self.TreasureHunts) do
-        local mapItemDetails = treasureHunt:HandleClientOnHitZombie(player, nil)
+        local mapItemDetails = treasureHunt:HandleClientOnHitZombie(player, zombie)
         if mapItemDetails then
             DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:CreateClientInitiatedMapItems() " .. treasureHunt.Name .. " mapItemDetails created")
             mapItemList[#mapItemList+1] = mapItemDetails
@@ -112,13 +113,13 @@ end
 
 function RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie(player, args)
     -- Server has received a message that the client has hit a zombie
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie()")
 
     self:SetWaitingToHitZombie(false, nil, player)
     local mapItemList = self:CreateClientInitiatedMapItems(player, args)
     local replyArgs = {playerUsername = player:getUsername(), mapItemList = mapItemList}
     --RicksMLC_THSharedUtils.DumpArgs(replyArgs, 0, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie() replyArgs")
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie() for " .. replyArgs.playerUsername .. " mapItemList created with " .. #mapItemList .. " items. Sending to client.")
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:HandleClientOnHitZombie() for " .. replyArgs.playerUsername .. " mapItemList created with " .. #mapItemList .. " items. Sending to client.")
     sendServerCommand("RicksMLC_TreasureHuntMgrClient", "MapItemsGenerated", replyArgs)
 end
 
@@ -211,13 +212,13 @@ end
 
 function RicksMLC_TreasureHuntMgrServer:AddTreasureHuntFromClient(player, args)
     -- Call the base class AddTreasureHunt() to manually add the one sent from the client
-    --RicksMLC_THSharedUtils.DumpArgs(args, 0, "RicksMLC_TreasureHuntMgrServer:AddTreasureHuntFromClient() args")
+    RicksMLC_THSharedUtils.DumpArgs(args, 0, "RicksMLC_TreasureHuntMgrServer:AddTreasureHuntFromClient() args")
     local treasureHunt = self:AddTreasureHunt(args.treasureHuntDefn, false)
 
     if treasureHunt and args.treasureHuntDefn.Player and treasureHunt:GetMode() ~= "ChaosRace" then
         local restrictPlayer = RicksMLC_TreasureHuntMgrServer.GetPlayer(args.treasureHuntDefn.Player, true) or player
         treasureHunt:RestrictMapToPlayer(restrictPlayer)
-        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:AddTreasureHuntFromClient() restrictPlayer: " .. restrictPlayer:getUsername())
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrServer:AddTreasureHuntFromClient() restrictPlayer: " .. restrictPlayer:getUsername())
     end
     self:SendAddedTreasureHuntToClients(treasureHunt)
 end

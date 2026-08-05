@@ -112,6 +112,16 @@ function RicksMLC_MapUtils.OverlayPNG(mapUI, x, y, scale, layerName, tex, alpha)
 	layer:setBoundsInSquares(x, y, x + texture:getWidth() * scale, y + texture:getHeight() * scale)
 end
 
+function RicksMLC_MapUtils.AddText(mapUI, x, y, text, size, color, alpha)
+    local mapAPI = mapUI.javaObject:getAPIv1()
+    local styleAPI = mapAPI:getStyleAPI()
+    local layer = styleAPI:newTextLayer(text)
+    layer:setMinZoom(MINZ)
+    layer:addFill(MINZ, color.r, color.g, color.b, (alpha or 1.0) * 255)
+    layer:setFontSize(size)
+    layer:setBoundsInSquares(x, y, x + 1, y + 1)
+end
+
 --------------------------------------
 
 -- Note that AmbientStreamManager is not on the server in vanilla.

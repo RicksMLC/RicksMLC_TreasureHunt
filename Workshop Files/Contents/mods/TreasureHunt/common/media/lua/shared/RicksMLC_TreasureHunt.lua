@@ -164,6 +164,10 @@ function RicksMLC_TreasureHunt:CallAnyVisualDecorator(mapNum, mapUI)
     end
     if visualDecoratorName then
         local visualDecorator = RicksMLC_MapDecorators.Instance():Get(visualDecoratorName)
+        if not visualDecorator then
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:CallAnyVisualDecorator() ERROR: No visual decorator found for name: " .. tostring(visualDecoratorName))
+            return
+        end
         treasureModData = self.ModData.Maps[mapNum]
         local visualDecoratorData = visualDecorator(mapUI, treasureModData.buildingCentreX, treasureModData.buildingCentreY, treasureModData.VisualDecoratorData)
         if visualDecoratorData then
@@ -307,9 +311,14 @@ function RicksMLC_TreasureHunt:CallDecorator(stashMap, treasureModData, i)
         -- The Item decorator overrides the general decorator list for the hunt.
         decoratorName = self.Treasures[i].Decorator
     end
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:CallDecorator() for map decoratorName: " .. tostring(decoratorName))
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:CallDecorator() for map decoratorName: " .. tostring(decoratorName))
     if decoratorName then
         local decorator = RicksMLC_MapDecorators.Instance():Get(decoratorName)
+        if not decorator then
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:CallDecorator() ERROR: No decorator found for name: " .. tostring(decoratorName))
+            RicksMLC_TreasureHuntStash.DefaultReplacementDecorator(stashMap, treasureModData.buildingCentreX, treasureModData.buildingCentreY)
+            return
+        end
         decorator(stashMap, treasureModData.buildingCentreX, treasureModData.buildingCentreY)
     else
         RicksMLC_TreasureHuntStash.DefaultDecorator(stashMap, treasureModData.buildingCentreX, treasureModData.buildingCentreY)
@@ -331,7 +340,7 @@ local function dumpStash(stashMap)
 end
 
 function RicksMLC_TreasureHunt:AddStashToStashUtil(treasureModData, i, stashMapName)
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashToStashUtil() for stashMapName: " .. stashMapName)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashToStashUtil() for stashMapName: " .. stashMapName)
     local spawnTable = stashMapName -- This string is the lookup into the SuburbsDisributions table.  See RicksMLC_TreasureHuntDistributions.lua
     local newStashMap = RicksMLC_TreasureHuntStash.AddStash(
         stashMapName,
@@ -359,20 +368,24 @@ function RicksMLC_TreasureHunt:AddStashMap(treasureModData, i)
     local stashMapName = self:GenerateMapName(i)
     local stashDesc = RicksMLC_StashDescLookup.Instance():StashLookup(stashMapName)
     if not stashDesc then
-        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashMap() Adding stash for " .. stashMapName)
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashMap() Adding stash for " .. stashMapName)
         self:AddStashToStashUtil(treasureModData, i, stashMapName)
-        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashMap() Adding to StashSystem for " .. stashMapName)
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddStashMap() Adding to StashSystem for " .. stashMapName)
         -- Add the stash map to the existing stash info in the StashSystem.
         RicksMLC_TreasureHuntStash.AddStashToStashSystem(stashMapName)
     else
-        --DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
-        --RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
+        DebugLog.log(DebugType.Mod, "  Found existing stash for " .. stashMapName)
+        RicksMLC_THSharedUtils.DumpArgs(stashDesc, 0, "Existing Stash Details")
     end
     self:UpdateLootMapsInitFn(stashMapName, self.HuntId, i)
 end
 
 function RicksMLC_TreasureHunt:AddStashMaps()
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddStashMaps()")
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt.AddStashMaps()" .. " for Hunt: " .. self.Name)
+    if not self.ModData.Maps or #self.ModData.Maps == 0 then
+        DebugLog.log(DebugType.Mod, "ERROR: RicksMLC_TreasureHunt.AddStashMaps() No Maps in ModData.  Nothing to add.")
+        return
+    end
     for i, treasureModData in ipairs(self.ModData.Maps) do
         -- Check if the stash already exists
         self:AddStashMap(treasureModData, i)
@@ -385,6 +398,7 @@ end
 --      CreateTreasureModData() Chooses the building and sets the zombies, barricades
 -- The generated map is stored in the i'th postition in the self.ModData.Maps
 function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown, optionalMapNum)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GenerateTreasure() for hunt '" .. self.Name .. "' treasure: " .. ((isTable(treasure) and treasure.Item) or treasure) .. " i: " .. tostring(i) .. " optionalTown: " .. tostring(optionalTown) .. " optionalMapNum: " .. tostring(optionalMapNum))
     if self.ModData.Maps[i] then
         if not self.ModData.Maps[i].Building then
             -- The ModData will not store the BuildingDef so populate it using the building co-ords
@@ -416,6 +430,7 @@ function RicksMLC_TreasureHunt:GenerateTreasure(treasure, i, optionalTown, optio
 end
 
 function RicksMLC_TreasureHunt:GeneratePastTreasures()
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GeneratePastTreasures() for Hunt: " .. self.Name)
     -- Assemble the treasure data for all treasures maps that have been made.
     for i, treasureModData in ipairs(self.ModData.Maps) do
         self:GenerateTreasure(self.Treasures[i], i, treasureModData.Town.Town, treasureModData.Town.MapNum)
@@ -571,6 +586,7 @@ function RicksMLC_TreasureHunt:GenerateNextMapItem(doStash)
         StashSystem.doStashItem(stash, mapItem) -- Copies the stash.annotations to the java layer stash object and removes from potential stashes.
         mapItem:doBuildingStash()
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GenerateNextMapItem(): doStashItem() called for '" .. mapItem:getMapID() .. "'")
+        RicksMLC_THSharedUtils.DumpArgs(mapItem, 0, "Generated Treasure Map Item " .. mapItem:getMapID())
     else
         DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:GenerateNextMapItem(): no doStashItem() called for '" .. mapItem:getMapID() .. "'")
     end
@@ -592,6 +608,7 @@ function RicksMLC_TreasureHunt:AddMapToSquare(square, mapItem)
 end
 
 -- AddMapToWorld: Override on the server to do nothing as it is meaninless to add the mapItem on the server side.
+-- FIXME: Change this as only the server side can create objects.
 function RicksMLC_TreasureHunt:AddMapToWorld(mapItem, zombie, gridSquare)
     if not zombie then
         --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient:AddMapToWorld() No Zombie. Add to gridSquare")
@@ -624,7 +641,7 @@ function RicksMLC_TreasureHunt:AddMapToWorld(mapItem, zombie, gridSquare)
         end
     else
         --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() not dead")
-        if isClient() then 
+        if isServer() then 
             DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHunt:AddMapToWorld() isClient() adding to world at zombie location - clumsy zombie")
             local sq = zombie:getSquare()
             if sq then
@@ -648,6 +665,7 @@ end
 function RicksMLC_TreasureHunt:MakeMapItemDetails(mapItem)
     local mapItemDetails = {
         mapItem = mapItem,
+        mapItemId = mapItem:getID(),
         stashMapName = mapItem:getMapID(), 
         huntId = self.HuntId, 
         i = self.ModData.CurrentMapNum, 

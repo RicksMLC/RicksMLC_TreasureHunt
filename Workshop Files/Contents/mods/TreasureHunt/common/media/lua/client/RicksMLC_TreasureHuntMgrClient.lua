@@ -191,8 +191,8 @@ function RicksMLC_TreasureHuntMgrClient:HandleOnHitZombie(zombie, character, bod
     DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.HandleOnHitZombie()")
     self.HitZombie = zombie
     
-    local args = {zombie = zombie, character = character, bodyPartType = bodyPartType, handWeapon = handWeapon}
-    --RicksMLC_THSharedUtils.DumpArgs(args, 0, "Sending ClientOnHitZombie args")
+    local args = {zombieOnlineID = zombie:getOnlineID()} -- FIXME: Args need serialization
+    RicksMLC_THSharedUtils.DumpArgs(args, 0, "Sending ClientOnHitZombie args")
     sendClientCommand(getPlayer(), "RicksMLC_TreasureHuntMgrServer", "ClientOnHitZombie", args)
     self:SetWaitingToHitZombie(false)
 end
@@ -236,8 +236,8 @@ function RicksMLC_TreasureHuntMgrClient:IsMapItemForPlayer(treasureHunt, mapItem
 end
 
 function RicksMLC_TreasureHuntMgrClient:HandleOnMapItemsGenerated(args)
-    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.HandleOnMapItemsGenerated() for " .. args.playerUsername)
-    --RicksMLC_THSharedUtils.DumpArgs(args, 0, "HandleOnMapItemsGenerated args")
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntMgrClient.HandleOnMapItemsGenerated() for " .. args.playerUsername)
+    RicksMLC_THSharedUtils.DumpArgs(args, 0, "HandleOnMapItemsGenerated args")
 
     if args.mapItemList then
         for _, mapItemDetails in ipairs(args.mapItemList) do

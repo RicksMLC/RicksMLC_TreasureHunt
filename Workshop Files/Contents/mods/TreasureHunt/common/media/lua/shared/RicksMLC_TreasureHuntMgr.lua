@@ -102,6 +102,7 @@ function RicksMLC_MapIDLookup:new()
 	self.__index = self
 
     o.readingMapId = nil
+    o.mapItem = nil
     o.Lookup = {}
 
     return o
@@ -111,7 +112,11 @@ function RicksMLC_MapIDLookup:AddMapID(mapId, huntId, mapNum)
     self.Lookup[mapId] = {HuntId = huntId, MapNum = mapNum}
 end
 
-function RicksMLC_MapIDLookup:SetReadingMap(item) self.readingMapID = item end
+function RicksMLC_MapIDLookup:SetReadingMap(mapId, item) 
+    self.readingMapID = mapId
+    self.mapItem = item 
+end
+
 function RicksMLC_MapIDLookup:GetReadingMap() return self.Lookup[self.readingMapID] end
 
 function RicksMLC_MapIDLookup:GetMapLookup(mapId)

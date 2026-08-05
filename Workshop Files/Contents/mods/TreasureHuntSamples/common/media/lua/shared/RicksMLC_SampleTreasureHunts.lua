@@ -67,7 +67,7 @@ require "RicksMLC_MapUtils"
 require "RicksMLC_TreasureHuntMgr"
 require "Definitions/MapSymbolDefinitions"
 
-RicksMLC_SampleTreasureHunts = {}
+RicksMLC_SampleTreasureHunts = RicksMLC_SampleTreasureHunts or {}
 
 -- Optional Custom decorator functions to annotate each treaure map.
 -- These functions must be registered with the RicksMLC_MapDecorators.Instance():Register(name, fn)
@@ -148,6 +148,7 @@ local function SampleVisualDecorator(mapUI, x, y, visualDecoratorData)
 end
 
 local function RegisterMapDecorators()
+    DebugLog.log(DebugType.Mod, "RicksMLC_SampleTreasureHunts:RegisterMapDecorators()")
     RicksMLC_MapDecorators.Instance():Register("FluffyFootDecorator", RicksMLC_SampleTreasureHunts.FluffyFootDecorator)
     RicksMLC_MapDecorators.Instance():Register("FreddyFoxDecorator", RicksMLC_SampleTreasureHunts.FreddyFoxDecorator)
     RicksMLC_MapDecorators.Instance():Register("SampleGenMagDecorator", RicksMLC_SampleTreasureHunts.GenMagDecorator)
@@ -240,9 +241,9 @@ end
 -- Treasure Hunt PreInit event subscriber. Typically use this event to register map decorators and add custom Towns.
 local function PreInitTreasureHunt()
     DebugLog.log(DebugType.Mod, "RicksMLC_SampleTreasureHunts PreInitTreasureHunt()")
-    AddCustomTextures()
-    RegisterMapDecorators()
-    AddSampleTownToTreasureHunt()
+    --AddCustomTextures()
+    --RegisterMapDecorators()
+    --AddSampleTownToTreasureHunt()
 end
 
 -- Treasure Hunt InitDone event subscriber.  Add Treasure Hunts after this event.
@@ -257,3 +258,11 @@ end
 Events.RicksMLC_TreasureHuntMgr_PreInit.Add(PreInitTreasureHunt)
 Events.RicksMLC_TreasureHuntMgr_InitDone.Add(LoadSampleTreasureHunts)
 
+Events.OnGameStart.Add(function()
+    DebugLog.log(DebugType.Mod, "RicksMLC_SampleTreasureHunts OnGameStart()")
+    if SandboxVars.RicksMLC_TreasureHunt.SamplesOn then
+        AddCustomTextures()
+        RegisterMapDecorators()
+        AddSampleTownToTreasureHunt()
+    end
+end)

@@ -1,4 +1,4 @@
--- RicksMLC_TreasureHunt stash
+-- RicksMLC_TreasureHuntStash.lua
 
 RicksMLC_TreasureHuntStash = {}
 
@@ -8,6 +8,14 @@ function RicksMLC_TreasureHuntStash.DefaultDecorator(stashMap, x, y)
     stashMap:addStamp("ArrowWest", nil, x + 10, y, 1, 0, 0)
     stashMap:addStamp(nil, "Stash_RicksMLC_TreasureMap_Text1", x + 20, y - 10, 1, 0, 0)
 end
+
+function RicksMLC_TreasureHuntStash.DefaultReplacementDecorator(stashMap, x, y)
+    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash.DefaultDecorator() for map " .. stashMap.customName)
+    stashMap:addStamp("Circle", nil, x, y, 1, 0, 0)
+    stashMap:addStamp("ArrowWest", nil, x + 10, y, 1, 0, 0)
+    stashMap:addStamp(nil, "Stash_RicksMLC_TreasureMap_Text2", x + 20, y - 10, 1, 0, 0)
+end
+
 
 -- spawnTable is the name of the distribution in the SuburbsDistributions
 -- The newStash() adds the stash to the vanilla StashDescriptions, which is used in the StashSystem load()/save() functions.
@@ -26,11 +34,12 @@ function RicksMLC_TreasureHuntStash.AddStash(newStashName, x, y, barricades, zom
 end
 
 function RicksMLC_TreasureHuntStash.AddStashToStashSystem(stashMapName)
+    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash.AddStashToStashSystem() for stashMapName: " .. stashMapName)
     -- Check if the StashSystem is initialised.
     local allStashes = StashSystem.getAllStashes()
     if allStashes == nil or allStashes:isEmpty() then
         -- Do we init, or just return to let the vanilla code init all?
-        --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash.AddStashToStashSystem() StashSystem.getAllStashes() is empty. Calling StashSystem.initAllStashes()")
+        DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash.AddStashToStashSystem() StashSystem.getAllStashes() is empty. Calling StashSystem.initAllStashes()")
         StashSystem.initAllStashes()
         allStashes = StashSystem.getAllStashes()
         if allStashes == nil or allStashes:isEmpty() then
@@ -46,7 +55,7 @@ function RicksMLC_TreasureHuntStash.AddStashToStashSystem(stashMapName)
             for i=0, allStashes:size()-1 do   
                 local existingStash = allStashes:get(i)
                 if existingStash and existingStash:getName() == stashMapName then
-                    --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash:AddStashToStashSystem() StashSystem already has stash: " .. stashMapName)
+                    DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash:AddStashToStashSystem() StashSystem already has stash: " .. stashMapName)
                     return
                 end
             end
@@ -58,7 +67,7 @@ function RicksMLC_TreasureHuntStash.AddStashToStashSystem(stashMapName)
             local stashBuilding = StashBuilding.new(stashDesc.name, stashDesc.buildingX, stashDesc.buildingY)
             possibleStashes:add(stashBuilding)
 
-            --DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash:AddStashToStashSystem() Added to StashSystem: " .. stashMapName)
+            DebugLog.log(DebugType.Mod, "RicksMLC_TreasureHuntStash:AddStashToStashSystem() Added to StashSystem: " .. stashMapName)
             return
         end
 	end
